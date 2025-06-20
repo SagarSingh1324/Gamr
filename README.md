@@ -1,4 +1,4 @@
-# gamr
+# Gamr
 
 A new Flutter project.
 

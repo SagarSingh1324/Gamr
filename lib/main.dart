@@ -3,17 +3,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/explore_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/library_screen.dart';
-import 'package:provider/provider.dart';
-import 'viewmodels/explore_viewmodel.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async{
   await dotenv.load(fileName: ".env");
   
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ExploreViewModel(),
-      child: MyApp(),
-    ),
+    const ProviderScope(
+        child: MyApp(),
+      ),
   );
 }
 

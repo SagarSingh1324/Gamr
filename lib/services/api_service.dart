@@ -20,10 +20,39 @@ class ApiService {
         Uri.parse(_url),
         headers: headers,
         body: '''
-            fields id,name,summary,cover.url;
+            fields id,name,summary,cover.url,genres.name;
             where genres.name = "$genre" & rating_count > 10;
             sort $sortBy desc;
             limit 20;
+            ''',
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to load explore items: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchGameByName(String name) async{
+    final headers = {
+      'Client-ID': _apiId,
+      'Authorization': 'Bearer $_apiKey',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(_url),
+        headers: headers,
+        body: '''
+            fields id, name, summary, cover.url,genres.name; 
+            search "$name"; 
+            limit 10;
             ''',
       );
 

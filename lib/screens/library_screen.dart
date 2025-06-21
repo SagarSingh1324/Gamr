@@ -3,6 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gamr/models/game_instance.dart';
 import '../models/game_list.dart';
 import '../notifiers/game_library_notifier.dart';
+import '../widgets/game_card_small.dart';
+import '../widgets/currently_playing_card.dart';
+
+final GameInstance currentGame = GameInstance(
+  id: 139090,
+  name: "Inscryption",
+  cover: Cover(
+    id: 186672,
+    url: "//images.igdb.com/igdb/image/upload/t_thumb/co401c.jpg",
+  ),
+  summary: "Inscryption is an inky black card-based odyssey that blends the deckbuilding roguelike, escape-room style puzzles, and psychological horror into a blood-laced smoothie. Darker still are the secrets inscrybed upon the cards...",
+  genres: [
+    Genre(id: 9, name: "Puzzle"),
+    Genre(id: 15, name: "Strategy"),
+    Genre(id: 31, name: "Adventure"),
+    Genre(id: 32, name: "Indie"),
+    Genre(id: 35, name: "Card & Board Game"),
+  ],
+);
 
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
@@ -13,40 +32,59 @@ class LibraryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Library')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: gameLists.length + 1,
-        itemBuilder: (context, index) {
-          if (index == gameLists.length) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: ElevatedButton(
-                onPressed: () => _createNewPlaylist(context, ref),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  backgroundColor: Colors.blue,
-                ),
-                child: const Text('Add New List', style: TextStyle(fontSize: 16, color: Colors.black)),
-              ),
-            );
-          }
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          CurrentlyPlayingCard(
+            game: currentGame,
+            startDate: DateTime(2025, 1, 1), 
+            progress: 0.7,
+            onMarkCompleted: () {
+              //logic here
+            },
+          ),
+          const SizedBox(height: 4),
+          Expanded( 
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: gameLists.length + 1,
+              itemBuilder: (context, index) {
+                if (index == gameLists.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: ElevatedButton(
+                      onPressed: () => _createNewPlaylist(context, ref),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        backgroundColor: Colors.blue,
+                      ),
+                      child: const Text(
+                        'Add New List',
+                        style: TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                    ),
+                  );
+                }
 
-          final gameList = gameLists[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: ElevatedButton(
-              onPressed: () => _showBottomSheet(context, ref, index),
-              onLongPress: () => _deletePlaylist(context, ref, gameList),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-              child: Text(
-                '${gameList.label} (${gameList.games.length})',
-                style: const TextStyle(fontSize: 16, color: Colors.black),
-              ),
+                final gameList = gameLists[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ElevatedButton(
+                    onPressed: () => _showBottomSheet(context, ref, index),
+                    onLongPress: () => _deletePlaylist(context, ref, gameList),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                    ),
+                    child: Text(
+                      '${gameList.label} (${gameList.games.length})',
+                      style: const TextStyle(fontSize: 16, color: Colors.black),
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -145,6 +183,7 @@ class GameListModal extends ConsumerWidget {
       width: double.infinity,
       child: Column(
         children: [
+          // Title Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -159,20 +198,17 @@ class GameListModal extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
+
+          // Game List
           Expanded(
             child: ListView.builder(
               itemCount: gameList.games.length,
               itemBuilder: (context, index) {
                 final game = gameList.games[index];
-                return Card(
-                  child: ListTile(
-                    title: Text(game.name),
-                    subtitle: Text(game.summary),
-                    leading: CircleAvatar(
-                      child: Text(game.id.toString()),
-                    ),
-                    onLongPress: () => _deleteGameFromList(context, ref, listIndex, game),
-                  ),
+
+                return GestureDetector(
+                  onLongPress: () => _deleteGameFromList(context, ref, listIndex, game),
+                  child: GameInstanceCardSmall(item: game),
                 );
               },
             ),
@@ -210,9 +246,10 @@ class GameListModal extends ConsumerWidget {
                   label: gameList.label,
                   games: updatedGames,
                 );
-                
+
                 ref.read(gameLibraryProvider.notifier).updateList(listIndex, updatedList);
                 Navigator.of(context).pop();
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('${game.name} removed'),

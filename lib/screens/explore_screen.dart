@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
 import '../models/game_list.dart';
-import '../notifiers/explore_notifier.dart'; 
-import '../notifiers/game_library_notifier.dart'; 
+import '../notifiers/explore_notifier.dart';
+import '../notifiers/game_library_notifier.dart';
 
 class ExploreScreen extends ConsumerWidget {
   const ExploreScreen({super.key});
@@ -49,8 +49,8 @@ class ExploreScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (items) {
-          if (items.isEmpty) {
+        data: (genreMap) {
+          if (genreMap.isEmpty) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -63,36 +63,129 @@ class ExploreScreen extends ConsumerWidget {
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: () => exploreNotifier.refreshItems(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: items.length,
-              itemBuilder: (context, index) => _buildGameInstanceCard(context, ref, items[index]),
-            ),
+          final availableGenres = exploreNotifier.getAvailableGenres();
+
+          return ListView(
+            padding: const EdgeInsets.all(8),
+            children: [
+              ...availableGenres.map((genre) {
+                final gamesForGenre = genreMap[genre] ?? [];
+                
+                if (gamesForGenre.isNotEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildHorizontalList(context, ref, genre, gamesForGenre),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildGameInstanceCard(BuildContext context, WidgetRef ref, GameInstance item) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      elevation: 2,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).primaryColor,
-          child: Text(
-            item.id.toString(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+  Widget _buildHorizontalList(BuildContext context, WidgetRef ref, String title, List<GameInstance> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 300, 
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: _buildGameInstanceCard(context, ref, items[index]),
+              );
+            },
           ),
         ),
-        title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-        subtitle: Text('ID: ${item.id}'),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () => _showItemDetails(context, item),
-        onLongPress: () => _addToLibrary(context, ref, item),
+      ],
+    );
+  }
+
+  Widget _buildGameInstanceCard(BuildContext context, WidgetRef ref, GameInstance item) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SizedBox(
+        width: 300,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, 
+          children: [
+            // Top Image (Fixed Height)
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Image.network(
+                'https:${item.cover.url.replaceFirst('t_thumb', 't_720p')}',
+                width: double.infinity,
+                height: 170,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return SizedBox(
+                    height: 170,
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 170,
+                    color: Colors.grey[300],
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  );
+                },
+              ),
+            ),
+            // Info Section (Natural Height)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: ${item.id}',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  // Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.info_outline),
+                        onPressed: () => _showItemDetails(context, item),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () => _addToLibrary(context, ref, item),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

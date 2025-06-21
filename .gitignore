@@ -1,9 +1,9 @@
 # Removing specific folders
-/android
-/ios
-/linux
-/macos 
-/web
+android/
+ios/
+linux/
+macos/ 
+web/
 
 # Miscellaneous
 *.class

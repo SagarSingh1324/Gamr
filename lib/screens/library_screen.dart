@@ -5,6 +5,7 @@ import '../models/game_list.dart';
 import '../notifiers/game_library_notifier.dart';
 import '../widgets/game_card_small.dart';
 import '../widgets/currently_playing_card.dart';
+import 'package:share_plus/share_plus.dart';
 
 final GameInstance currentGame = GameInstance(
   id: 139090,
@@ -98,34 +99,158 @@ class LibraryScreen extends ConsumerWidget {
   }
 
   void _createNewPlaylist(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
+    final nameController = TextEditingController();
+    final importController = TextEditingController();
+    bool isImportMode = false;
+    bool isLoading = false;
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (_) {
-        return AlertDialog(
-          title: const Text('Enter new list name:'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(hintText: "Type here"),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                final label = controller.text.trim();
-                if (label.isNotEmpty) {
-                  ref.read(gameLibraryProvider.notifier).addList(
-                    GameList(label: label, games: []),
-                  );
-                }
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add New List'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : () => setState(() => isImportMode = false),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: !isImportMode ? Colors.blue : Colors.grey.shade300,
+                            foregroundColor: !isImportMode ? Colors.white : Colors.black,
+                          ),
+                          child: const Text('Empty List'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : () => setState(() => isImportMode = true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isImportMode ? Colors.green : Colors.grey.shade300,
+                            foregroundColor: isImportMode ? Colors.white : Colors.black,
+                          ),
+                          child: const Text('Import List'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (!isImportMode) ...[
+                    const Text('Create an empty list and add games later', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameController,
+                      enabled: !isLoading,
+                      decoration: const InputDecoration(labelText: 'List name', hintText: 'Enter a name for your list'),
+                      autofocus: true,
+                    ),
+                  ] else ...[
+                    const Text('Import a shared list (includes list name and games)', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: importController,
+                      enabled: !isLoading,
+                      decoration: const InputDecoration(labelText: 'Shared list data', hintText: 'Paste the shared list here'),
+                      maxLines: 3,
+                      autofocus: true,
+                    ),
+                    if (isLoading) ...[
+                      const SizedBox(height: 12),
+                      const LinearProgressIndicator(),
+                      const SizedBox(height: 8),
+                      const Text('Fetching games...', style: TextStyle(color: Colors.grey, fontSize: 12), textAlign: TextAlign.center),
+                    ],
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                if (!isLoading)
+                  TextButton(
+                    child: Text(isImportMode ? 'Import' : 'Create'),
+                    onPressed: () async {
+                      if (!isImportMode) {
+                        final label = nameController.text.trim();
+                        if (label.isNotEmpty) {
+                          ref.read(gameLibraryProvider.notifier).addList(
+                            GameList(label: label, games: []),
+                          );
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Created "$label" list'), backgroundColor: Colors.green),
+                          );
+                        }
+                      } else {
+                        final sharedText = importController.text.trim();
+                        if (sharedText.isEmpty) return;
+
+                        setState(() => isLoading = true);
+
+                        try {
+                          // Extract list name
+                          final nameMatch = RegExp(r'"([^"]+)"').firstMatch(sharedText);
+                          final listName = nameMatch?.group(1) ?? 'Imported List';
+
+                          // Extract game IDs
+                          final match = RegExp(r'\[([0-9,\s]+)\]').firstMatch(sharedText);
+                          List<int> idList = [];
+                          if (match != null) {
+                            final innerText = match.group(1)!;
+                            idList = innerText
+                                .split(',')
+                                .map((e) => int.tryParse(e.trim()))
+                                .whereType<int>()
+                                .toList();
+                          }
+
+                          // Use notifier method
+                          await ref.read(gameLibraryProvider.notifier)
+                              .importGamesFromIdList(listName, idList);
+
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Imported "$listName" with ${idList.length} games'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            setState(() => isLoading = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to import list'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    },
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+              ],
+            );
+          },
         );
       },
     );
@@ -187,9 +312,18 @@ class GameListModal extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                gameList.label,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    gameList.label,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.share),
+                    onPressed: () =>_handleShare(context, ref),
+                  ),
+                ],
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -198,7 +332,6 @@ class GameListModal extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-
           // Game List
           Expanded(
             child: ListView.builder(
@@ -215,6 +348,21 @@ class GameListModal extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _handleShare(BuildContext context, WidgetRef ref){
+    final gameLists = ref.read(gameLibraryProvider);
+    final gameList = gameLists[listIndex];
+    // Extract game IDs as plain text
+    final gameIdsText = gameList.games
+        .map((game) => game.id.toString())
+        .join(',');
+    // Compose and share the message
+    SharePlus.instance.share(
+      ShareParams(text:'Game IDs in "${gameList.label}":\n[$gameIdsText]',
+      subject: 'Game IDs from ${gameList.label}',
+      )
     );
   }
 

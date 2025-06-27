@@ -66,5 +66,32 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  Future<List<dynamic>> fetchGameById(int id) async{
+    final headers = {
+      'Client-ID': _apiId,
+      'Authorization': 'Bearer $_apiKey',
+      'Content-Type': 'application/json',
+    };
+    try {
+      final response = await http.post(
+        Uri.parse(_url),
+        headers: headers,
+        body: '''
+            fields id, name, summary, cover.url,genres.name;
+            where id = $id;
+            limit 10;
+            ''',
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data;
+      } else {
+        throw Exception('Failed to load explore items: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
 }
 

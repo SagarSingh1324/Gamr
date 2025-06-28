@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
-import '../notifiers/explore_notifier.dart';
+import '../providers/explore_provider.dart';
 import '../widgets/game_card_big.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
-  const ExploreScreen({super.key});
+
+  final VoidCallback? onNavigateToLibrary;
+  const ExploreScreen({
+    super.key, 
+    this.onNavigateToLibrary,
+  });
 
   @override
   ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
@@ -101,7 +106,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         itemBuilder: (context, index) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: GameInstanceCardBig(item: results[index], ref: ref),
+                            child: GameInstanceCardBig(
+                              item: results[index], 
+                              ref: ref, 
+                              onNavigateToLibrary: widget.onNavigateToLibrary, 
+                            ),
                           );
                         },
                       );
@@ -169,14 +178,18 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 300, // Adjust to your card size
+          height: 300, 
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: games.length,
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: GameInstanceCardBig(item: games[index], ref: ref),
+                child: GameInstanceCardBig(
+                  item: games[index], 
+                  ref: ref, 
+                  onNavigateToLibrary: widget.onNavigateToLibrary, 
+                ),
               );
             },
           ),

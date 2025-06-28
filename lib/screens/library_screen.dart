@@ -1,31 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gamr/models/game_instance.dart';
 import '../models/game_list.dart';
-import '../notifiers/game_library_notifier.dart';
-import '../widgets/game_card_small.dart';
+import '../models/played_game_list.dart';
+import '../providers/game_library_provider.dart';
+import '../providers/current_game_provider.dart'; 
 import '../widgets/currently_playing_card.dart';
-import 'package:share_plus/share_plus.dart';
-
-GameInstance getCurrentGame() {
-  return GameInstance(
-    id: 139090,
-    name: "Inscryption",
-    cover: Cover(
-      id: 186672,
-      url: "//images.igdb.com/igdb/image/upload/t_thumb/co401c.jpg",
-    ),
-    summary: "Inscryption is an inky black card-based odyssey that blends the deckbuilding roguelike, escape-room style puzzles, and psychological horror into a blood-laced smoothie. Darker still are the secrets inscrybed upon the cards...",
-    genres: [
-      Genre(id: 9, name: "Puzzle"),
-      Genre(id: 15, name: "Strategy"),
-      Genre(id: 31, name: "Adventure"),
-      Genre(id: 32, name: "Indie"),
-      Genre(id: 35, name: "Card & Board Game"),
-    ],
-    gameModes: [1,3], 
-  );
-}
+import '../widgets/game_list_modal.dart';
 
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
@@ -33,32 +13,32 @@ class LibraryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameLists = ref.watch(gameLibraryProvider);
-    ref.read(gameLibraryProvider.notifier); 
+    final currentSession = ref.watch(currentGameProvider);
+    final gameLibraryController = ref.read(gameLibraryProvider.notifier);
+    final gameSessionController = ref.read(currentGameProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Library')),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          CurrentlyPlayingCard(
-            game: getCurrentGame(),
-            startDate: DateTime.now(), 
-            previouslyPlayed: Duration(hours: 2, minutes: 30, seconds: 20),
-            expectedTime: Duration(hours: 4, minutes: 30, seconds: 20),
-            onMarkCompleted: () {
-              final game = getCurrentGame();
-              ref.read(gameLibraryProvider.notifier).addToCompleted(game);
+          if (currentSession != null)
+            CurrentlyPlayingCard(
+              onMarkCompleted: () {
+                gameLibraryController.addToCompleted(currentSession);
+                gameSessionController.markCompleted();
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Marked as Completed!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-          ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Marked as Completed!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+            ),
+
           const SizedBox(height: 4),
-          Expanded( 
+          Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: gameLists.length + 1,
@@ -85,7 +65,7 @@ class LibraryScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: ElevatedButton(
                     onPressed: () => _showBottomSheet(context, ref, index),
-                    onLongPress: gameList.isCore ? null : () => _deletePlaylist(context, ref, gameList),
+                    onLongPress: (gameList is GameList && gameList.isCore) ? null : () => _deletePlaylist(context, ref, gameList),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                     ),
@@ -93,10 +73,10 @@ class LibraryScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${gameList.label} (${gameList.games.length})',
+                          '${gameList.label} (${_getGameCount(gameList)})',
                           style: const TextStyle(fontSize: 16, color: Colors.black),
                         ),
-                        if (gameList.isCore && gameList.icon != null)
+                        if (gameList is PlayedGameList && gameList.isCore && gameList.icon != null)
                           Icon(gameList.icon, color: Colors.grey[600], size: 20),
                       ],
                     ),
@@ -216,11 +196,9 @@ class LibraryScreen extends ConsumerWidget {
                         setState(() => isLoading = true);
 
                         try {
-                          // Extract list name
                           final nameMatch = RegExp(r'"([^"]+)"').firstMatch(sharedText);
                           final listName = nameMatch?.group(1) ?? 'Imported List';
 
-                          // Extract game IDs
                           final match = RegExp(r'\[([0-9,\s]+)\]').firstMatch(sharedText);
                           List<int> idList = [];
                           if (match != null) {
@@ -232,7 +210,6 @@ class LibraryScreen extends ConsumerWidget {
                                 .toList();
                           }
 
-                          // Use notifier method
                           await ref.read(gameLibraryProvider.notifier)
                               .importGamesFromIdList(listName, idList);
 
@@ -276,14 +253,17 @@ class LibraryScreen extends ConsumerWidget {
     );
   }
 
-  void _deletePlaylist(BuildContext context, WidgetRef ref, GameList gameList) {
+  void _deletePlaylist(BuildContext context, WidgetRef ref, dynamic gameList) {
+    final label = gameList.label;
+    final count = _getGameCount(gameList);
+
     showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: Text('Delete "${gameList.label}"?', style: TextStyle(color: Colors.red[700])),
+          title: Text('Delete "$label"?', style: TextStyle(color: Colors.red[700])),
           content: Text(
-            'All ${gameList.games.length} games in this list will be permanently removed.',
+            'All $count games in this list will be permanently removed.',
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           backgroundColor: Colors.red[50],
@@ -300,7 +280,7 @@ class LibraryScreen extends ConsumerWidget {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${gameList.label} deleted'),
+                    content: Text('$label deleted'),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -311,121 +291,10 @@ class LibraryScreen extends ConsumerWidget {
       },
     );
   }
-}
 
-class GameListModal extends ConsumerWidget {
-  final int listIndex;
-  const GameListModal({super.key, required this.listIndex});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final gameLists = ref.watch(gameLibraryProvider);
-    final gameList = gameLists[listIndex];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      height: MediaQuery.of(context).size.height * 0.9,
-      width: double.infinity,
-      child: Column(
-        children: [
-          // Title Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Text(
-                    gameList.label,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.share),
-                    onPressed: () =>_handleShare(context, ref),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Game List
-          Expanded(
-            child: ListView.builder(
-              itemCount: gameList.games.length,
-              itemBuilder: (context, index) {
-                final game = gameList.games[index];
-
-                return GestureDetector(
-                  onLongPress: () => _deleteGameFromList(context, ref, listIndex, game),
-                  child: GameInstanceCardSmall(item: game),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleShare(BuildContext context, WidgetRef ref){
-    final gameLists = ref.read(gameLibraryProvider);
-    final gameList = gameLists[listIndex];
-    // Extract game IDs as plain text
-    final gameIdsText = gameList.games
-        .map((game) => game.id.toString())
-        .join(',');
-    // Compose and share the message
-    SharePlus.instance.share(
-      ShareParams(text:'Game IDs in "${gameList.label}":\n[$gameIdsText]',
-      subject: 'Game IDs from ${gameList.label}',
-      )
-    );
-  }
-
-  void _deleteGameFromList(BuildContext context, WidgetRef ref, int listIndex, GameInstance game) {
-    final gameLists = ref.watch(gameLibraryProvider);
-    final gameList = gameLists[listIndex];
-
-    showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: Text('Delete "${game.name}"?', style: TextStyle(color: Colors.red[700])),
-          content: Text(
-            '${game.name} will be removed from list.',
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
-          backgroundColor: Colors.red[50],
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-              child: const Text('DELETE'),
-              onPressed: () {
-                final updatedGames = List<GameInstance>.from(gameList.games)..remove(game);
-                final updatedList = gameList.copyWith(games: updatedGames);
-
-                ref.read(gameLibraryProvider.notifier).updateList(listIndex, updatedList);
-                Navigator.of(context).pop();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${game.name} removed'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
+  int _getGameCount(dynamic gameList) {
+    if (gameList is GameList) return gameList.games.length;
+    if (gameList is PlayedGameList) return gameList.playedGames.length;
+    return 0;
   }
 }

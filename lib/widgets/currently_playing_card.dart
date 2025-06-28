@@ -1,46 +1,13 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
+import '../providers/current_game_provider.dart';
+import '../widgets/time_to_beat.dart'; // ✅ Step 1: Import the widget
 
-class CurrentlyPlayingCard extends StatefulWidget {
-  final GameInstance game;
-  final DateTime startDate;
-  final Duration previouslyPlayed;
-  final Duration? expectedTime; // Optional for finite games
+class CurrentlyPlayingCard extends ConsumerWidget {
   final VoidCallback onMarkCompleted;
 
-  const CurrentlyPlayingCard({
-    super.key,
-    required this.game,
-    required this.startDate,
-    required this.previouslyPlayed,
-    this.expectedTime,
-    required this.onMarkCompleted,
-  });
-
-  @override
-  State<CurrentlyPlayingCard> createState() => _CurrentlyPlayingCardState();
-}
-
-class _CurrentlyPlayingCardState extends State<CurrentlyPlayingCard> {
-  bool _isTracking = false;
-  Timer? _timer;
-  Duration _currentSession = Duration.zero;
-
-  void _toggleTracking() {
-    setState(() {
-      _isTracking = !_isTracking;
-      if (_isTracking) {
-        _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-          setState(() {
-            _currentSession += const Duration(seconds: 1);
-          });
-        });
-      } else {
-        _timer?.cancel();
-      }
-    });
-  }
+  const CurrentlyPlayingCard({super.key, required this.onMarkCompleted});
 
   String _formatDuration(Duration duration) {
     final h = duration.inHours;
@@ -51,45 +18,39 @@ class _CurrentlyPlayingCardState extends State<CurrentlyPlayingCard> {
     return '${s}s';
   }
 
-  bool _isFiniteGame() {
-    // Treat as finite if:
-    // Only singleplayer(1) or co-op(3), and no multiplayer(2)
-    final modes = widget.game.gameModes;
+  bool _isFiniteGame(GameInstance game) {
+    final modes = game.gameModes;
     return (modes.contains(1) || modes.contains(3)) && !modes.contains(2);
   }
 
-  Duration? _getExpectedCompletionTime() {
-    // Return expected time from parameter first, then try to get from game data
-    if (widget.expectedTime != null) {
-      return widget.expectedTime;
-    }
-    
-    // Return normal completion time if available and game is finite
-    if (_isFiniteGame() && widget.game.hasTimeToBeat) {
-      final normalTime = widget.game.normalCompletionTime;
-      if (normalTime != null) {
-        return Duration(seconds: normalTime);
-      }
+  Duration? _getExpectedCompletionTime(GameInstance game) {
+    if (game.hasTimeToBeat && _isFiniteGame(game)) {
+      final normalTime = game.normalCompletionTime;
+      if (normalTime != null) return Duration(seconds: normalTime);
     }
     return null;
   }
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(currentGameProvider);
+    final controller = ref.read(currentGameProvider.notifier);
 
-  @override
-  Widget build(BuildContext context) {
-    final totalPlayed = widget.previouslyPlayed + _currentSession;
-    final genreText = widget.game.genres.isNotEmpty
-        ? widget.game.genres.map((g) => g.name).join(', ')
+    if (session == null) {
+      return const Center(child: Text("No game is currently being tracked."));
+    }
+
+    final game = session.game;
+    final isTracking = session.isPlaying;
+    final elapsed = session.elapsed;
+
+    final totalPlayed = elapsed;
+    final genreText = game.genres.isNotEmpty
+        ? game.genres.map((g) => g.name).join(', ')
         : "Unknown Genre";
 
-    final isFinite = _isFiniteGame();
-    // final isFinite = false;
-    final expectedTime = _getExpectedCompletionTime();
+    final isFinite = _isFiniteGame(game);
+    final expectedTime = _getExpectedCompletionTime(game);
 
     return Card(
       elevation: 4,
@@ -98,11 +59,11 @@ class _CurrentlyPlayingCardState extends State<CurrentlyPlayingCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Game Image
+          // Game cover
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             child: Image.network(
-              'https:${widget.game.cover.url.replaceFirst('t_thumb', 't_1080p')}',
+              'https:${game.cover.url.replaceFirst('t_thumb', 't_1080p')}',
               width: double.infinity,
               height: 180,
               fit: BoxFit.cover,
@@ -122,24 +83,28 @@ class _CurrentlyPlayingCardState extends State<CurrentlyPlayingCard> {
             ),
           ),
 
-          // Game Details
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.game.name,
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(game.name, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text(
-                  "Started on: ${widget.startDate.toLocal().toString().split(' ')[0]}",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                ),
+
+                if (session.startTime != null)
+                  Text(
+                    "Started on: ${session.startTime!.toLocal().toString().split(' ')[0]}",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
                 const SizedBox(height: 8),
+
                 ElevatedButton(
-                  onPressed: widget.onMarkCompleted,
+                  onPressed: () {
+                    controller.markCompleted();
+                    onMarkCompleted();
+                  },
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(40),
                     shape: RoundedRectangleBorder(
@@ -150,7 +115,6 @@ class _CurrentlyPlayingCardState extends State<CurrentlyPlayingCard> {
                 ),
                 const SizedBox(height: 12),
 
-                // Genre row
                 Row(
                   children: [
                     const Icon(Icons.videogame_asset, size: 18),
@@ -166,38 +130,43 @@ class _CurrentlyPlayingCardState extends State<CurrentlyPlayingCard> {
                 ),
                 const SizedBox(height: 10),
 
-                // Time display logic
+                // ✅ Progress section
                 if (isFinite && expectedTime != null) ...[
-                  Text(
-                      "Progress: ${_formatDuration(totalPlayed)} / ${_formatDuration(expectedTime)}"),
+                  Text("Progress: ${_formatDuration(totalPlayed)} / ${_formatDuration(expectedTime)}"),
                   const SizedBox(height: 4),
                   LinearProgressIndicator(
-                    value: expectedTime.inSeconds > 0 
+                    value: expectedTime.inSeconds > 0
                         ? (totalPlayed.inSeconds / expectedTime.inSeconds).clamp(0.0, 1.0)
                         : 0.0,
                     backgroundColor: Colors.grey[300],
                     color: Theme.of(context).colorScheme.primary,
                     minHeight: 6,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // ✅ TimeToBeatWidget below the progress bar
+                  TimeToBeatWidget(game: game),
                 ] else ...[
                   Text("Total Time Played: ${_formatDuration(totalPlayed)}"),
                   const SizedBox(height: 4),
                   Text(
-                    "Current Session: ${_formatDuration(_currentSession)}",
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.grey[600]),
+                    "Current Session: ${_formatDuration(elapsed)}",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // ✅ Still show TimeToBeatWidget even if not progressable
+                  TimeToBeatWidget(game: game),
                 ],
 
-                // Start/Pause Button
                 OutlinedButton.icon(
-                  onPressed: _toggleTracking,
-                  icon: Icon(_isTracking ? Icons.pause : Icons.play_arrow),
-                  label: Text(_isTracking ? 'Pause' : 'Start'),
+                  onPressed: () {
+                    isTracking ? controller.pause() : controller.resume();
+                  },
+                  icon: Icon(isTracking ? Icons.pause : Icons.play_arrow),
+                  label: Text(isTracking ? 'Pause' : 'Start'),
                 ),
               ],
             ),

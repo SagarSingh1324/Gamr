@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
-import '../services/api_service.dart';
+// import '../services/api_service.dart';
+import '../providers/api_service_provider.dart';
 
 class ExploreNotifier extends AsyncNotifier<Map<String, List<GameInstance>>> {
-  final ApiService _apiService = ApiService();
-
   // Mutable array of genres
   final List<String> genres = [
     "Adventure",
@@ -45,7 +44,7 @@ class ExploreNotifier extends AsyncNotifier<Map<String, List<GameInstance>>> {
   Future<void> fetchGenresIncrementally() async {
     // Get current state or start with empty map
     Map<String, List<GameInstance>> genreData = state.asData?.value ?? {};
-
+    
     for (String genre in genres) {
       try {
         final items = await _fetchItems(genre, "total_rating_count");
@@ -65,7 +64,7 @@ class ExploreNotifier extends AsyncNotifier<Map<String, List<GameInstance>>> {
   }
 
   Future<List<GameInstance>> _fetchItems(String genre, String sortBy) async {
-    final jsonList = await _apiService.fetchGameInstances(genre, sortBy);
+    final jsonList = await ref.read(apiServiceProvider).fetchGameInstances(genre, sortBy);
     return jsonList.map((json) => GameInstance.fromJson(json)).toList();
   }
 
@@ -80,7 +79,7 @@ class ExploreNotifier extends AsyncNotifier<Map<String, List<GameInstance>>> {
 
   //Fetch games by search query
   Future<List<GameInstance>> fetchByName(String query) async {
-    final jsonList = await _apiService.fetchGameByName(query);
+    final jsonList = await ref.read(apiServiceProvider).fetchGameByName(query);
     return jsonList.map((json) => GameInstance.fromJson(json)).toList();
   }
 
@@ -108,7 +107,3 @@ class ExploreNotifier extends AsyncNotifier<Map<String, List<GameInstance>>> {
     return List.from(genres);
   }
 }
-
-final exploreProvider =
-    AsyncNotifierProvider<ExploreNotifier, Map<String, List<GameInstance>>>(
-        ExploreNotifier.new);

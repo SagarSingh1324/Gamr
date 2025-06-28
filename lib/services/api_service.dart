@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
-
   static String get _url => '${dotenv.env['BASE_URL'] ?? ''}/games';
   static String get _ttbUrl => '${dotenv.env['BASE_URL'] ?? ''}/game_time_to_beats';
   static String get _apiId => dotenv.env['API_ID'] ?? '';
@@ -21,7 +20,7 @@ class ApiService {
         Uri.parse(_url),
         headers: headers,
         body: '''
-            fields id,name,summary,cover.url,genres.name;
+            fields id,name,summary,cover.url,genres.name,game_modes;
             where genres.name = "$genre" & rating_count > 10;
             sort $sortBy desc;
             limit 20;
@@ -39,7 +38,7 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchGameByName(String name) async{
+  Future<List<Map<String, dynamic>>> fetchGameByName(String name) async {
     final headers = {
       'Client-ID': _apiId,
       'Authorization': 'Bearer $_apiKey',
@@ -51,8 +50,8 @@ class ApiService {
         Uri.parse(_url),
         headers: headers,
         body: '''
-            fields id, name, summary, cover.url,genres.name; 
-            search "$name"; 
+            fields id, name, summary, cover.url,genres.name,game_modes;
+            search "$name";
             limit 10;
             ''',
       );
@@ -68,22 +67,24 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> fetchGameById(int id) async{
+  Future<List<dynamic>> fetchGameById(int id) async {
     final headers = {
       'Client-ID': _apiId,
       'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'application/json',
     };
+
     try {
       final response = await http.post(
         Uri.parse(_url),
         headers: headers,
         body: '''
-            fields id, name, summary, cover.url,genres.name;
+            fields id, name, summary, cover.url,genres.name,game_modes;
             where id = $id;
             limit 10;
             ''',
       );
+
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data;
@@ -101,17 +102,17 @@ class ApiService {
       'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'application/json',
     };
-    
+   
     try {
       final response = await http.post(
         Uri.parse(_ttbUrl),
         headers: headers,
         body: '''
             fields hastily, normally, completely;
-            where game = $gameId;
+            where game_id = $gameId;
             ''',
       );
-      
+     
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         if (data.isNotEmpty) {
@@ -122,7 +123,7 @@ class ApiService {
             'completely': timeToBeatData['completely'],
           };
         }
-        return null; 
+        return null;
       } else {
         throw Exception('Failed to load time to beat data: ${response.statusCode} ${response.body}');
       }
@@ -131,4 +132,3 @@ class ApiService {
     }
   }  
 }
-

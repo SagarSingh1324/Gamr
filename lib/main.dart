@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async{
   await dotenv.load(fileName: ".env");
-  
+ 
   runApp(
     const ProviderScope(
         child: MyApp(),
@@ -17,7 +17,6 @@ void main() async{
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,17 +28,23 @@ class MyApp extends StatelessWidget {
 
 class MainTabScreen extends StatefulWidget {
   const MainTabScreen({super.key});
-
   @override
   MainTabScreenState createState() => MainTabScreenState();
 }
 
 class MainTabScreenState extends State<MainTabScreen> {
-
   int _selectedIndex = 1; // Start on Home tab
-
-  final List<Widget> _screens = [
-    ExploreScreen(),
+  
+  // Navigation callback function
+  void navigateToLibrary() {
+    setState(() {
+      _selectedIndex = 2; // Library screen is at index 2
+    });
+  }
+  
+  // Build screens with navigation callback
+  List<Widget> get _screens => [
+    ExploreScreen(onNavigateToLibrary: navigateToLibrary),
     HomeScreen(),
     LibraryScreen(),
   ];

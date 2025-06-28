@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
 import '../models/game_list.dart';
-import '../notifiers/game_library_notifier.dart';
+import '../providers/game_library_provider.dart';
+import '../providers/current_game_provider.dart';
 
 class GameInstanceCardBig extends StatelessWidget {
   final GameInstance item;
   final WidgetRef ref;
+  final VoidCallback? onNavigateToLibrary;
 
   const GameInstanceCardBig({
     super.key,
     required this.item,
     required this.ref,
+    this.onNavigateToLibrary,
   });
 
   @override
@@ -77,6 +80,14 @@ class GameInstanceCardBig extends StatelessWidget {
                         icon: const Icon(Icons.add),
                         onPressed: () => _addToLibrary(context),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow),
+                        onPressed: () {
+                          final controller = ref.read(currentGameProvider.notifier);
+                          controller.startGame(item);
+                          onNavigateToLibrary?.call();
+                        },
+                      ),
                     ],
                   ),
                 ],
@@ -104,6 +115,19 @@ class GameInstanceCardBig extends StatelessWidget {
             Text('Genres: ${item.genres.isNotEmpty 
                 ? item.genres.map((genre) => genre.name).join(', ')
                 : 'No genres available'}'),
+            const SizedBox(height: 8),
+            Text('Modes: ${item.gameModes.isEmpty ? 'Not specified' : item.gameModes.map((mode) {
+              switch (mode) {
+                case 1:
+                  return 'Singleplayer';
+                case 2:
+                  return 'Multiplayer';
+                case 3:
+                  return 'Co-Op';
+                default:
+                  return 'Unknown';
+              }
+            }).join(', ')}'),
             const SizedBox(height: 8),
             Text(
               'Summary: ${item.summary}',

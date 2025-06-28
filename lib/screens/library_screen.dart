@@ -7,22 +7,25 @@ import '../widgets/game_card_small.dart';
 import '../widgets/currently_playing_card.dart';
 import 'package:share_plus/share_plus.dart';
 
-final GameInstance currentGame = GameInstance(
-  id: 139090,
-  name: "Inscryption",
-  cover: Cover(
-    id: 186672,
-    url: "//images.igdb.com/igdb/image/upload/t_thumb/co401c.jpg",
-  ),
-  summary: "Inscryption is an inky black card-based odyssey that blends the deckbuilding roguelike, escape-room style puzzles, and psychological horror into a blood-laced smoothie. Darker still are the secrets inscrybed upon the cards...",
-  genres: [
-    Genre(id: 9, name: "Puzzle"),
-    Genre(id: 15, name: "Strategy"),
-    Genre(id: 31, name: "Adventure"),
-    Genre(id: 32, name: "Indie"),
-    Genre(id: 35, name: "Card & Board Game"),
-  ],
-);
+GameInstance getCurrentGame() {
+  return GameInstance(
+    id: 139090,
+    name: "Inscryption",
+    cover: Cover(
+      id: 186672,
+      url: "//images.igdb.com/igdb/image/upload/t_thumb/co401c.jpg",
+    ),
+    summary: "Inscryption is an inky black card-based odyssey that blends the deckbuilding roguelike, escape-room style puzzles, and psychological horror into a blood-laced smoothie. Darker still are the secrets inscrybed upon the cards...",
+    genres: [
+      Genre(id: 9, name: "Puzzle"),
+      Genre(id: 15, name: "Strategy"),
+      Genre(id: 31, name: "Adventure"),
+      Genre(id: 32, name: "Indie"),
+      Genre(id: 35, name: "Card & Board Game"),
+    ],
+    gameModes: [1,3], 
+  );
+}
 
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
@@ -30,6 +33,7 @@ class LibraryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameLists = ref.watch(gameLibraryProvider);
+    ref.read(gameLibraryProvider.notifier); 
 
     return Scaffold(
       appBar: AppBar(title: const Text('Library')),
@@ -37,11 +41,20 @@ class LibraryScreen extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           CurrentlyPlayingCard(
-            game: currentGame,
-            startDate: DateTime(2025, 1, 1), 
-            progress: 0.7,
+            game: getCurrentGame(),
+            startDate: DateTime.now(), 
+            previouslyPlayed: Duration(hours: 2, minutes: 30, seconds: 20),
+            expectedTime: Duration(hours: 4, minutes: 30, seconds: 20),
             onMarkCompleted: () {
-              //logic here
+              final game = getCurrentGame();
+              ref.read(gameLibraryProvider.notifier).addToCompleted(game);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Marked as Completed!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
             },
           ),
           const SizedBox(height: 4),
@@ -72,13 +85,20 @@ class LibraryScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: ElevatedButton(
                     onPressed: () => _showBottomSheet(context, ref, index),
-                    onLongPress: () => _deletePlaylist(context, ref, gameList),
+                    onLongPress: gameList.isCore ? null : () => _deletePlaylist(context, ref, gameList),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                     ),
-                    child: Text(
-                      '${gameList.label} (${gameList.games.length})',
-                      style: const TextStyle(fontSize: 16, color: Colors.black),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${gameList.label} (${gameList.games.length})',
+                          style: const TextStyle(fontSize: 16, color: Colors.black),
+                        ),
+                        if (gameList.isCore && gameList.icon != null)
+                          Icon(gameList.icon, color: Colors.grey[600], size: 20),
+                      ],
                     ),
                   ),
                 );
@@ -182,7 +202,7 @@ class LibraryScreen extends ConsumerWidget {
                         final label = nameController.text.trim();
                         if (label.isNotEmpty) {
                           ref.read(gameLibraryProvider.notifier).addList(
-                            GameList(label: label, games: []),
+                            GameList(id: UniqueKey().toString(), label: label, games: []),
                           );
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -390,10 +410,7 @@ class GameListModal extends ConsumerWidget {
               child: const Text('DELETE'),
               onPressed: () {
                 final updatedGames = List<GameInstance>.from(gameList.games)..remove(game);
-                final updatedList = GameList(
-                  label: gameList.label,
-                  games: updatedGames,
-                );
+                final updatedList = gameList.copyWith(games: updatedGames);
 
                 ref.read(gameLibraryProvider.notifier).updateList(listIndex, updatedList);
                 Navigator.of(context).pop();

@@ -4,7 +4,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
 
-  static String get _url => dotenv.env['BASE_URL'] ?? '';
+  static String get _url => '${dotenv.env['BASE_URL'] ?? ''}/games';
+  static String get _ttbUrl => '${dotenv.env['BASE_URL'] ?? ''}/game_time_to_beats';
   static String get _apiId => dotenv.env['API_ID'] ?? '';
   static String get _apiKey => dotenv.env['API_KEY'] ?? '';
 
@@ -93,5 +94,41 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  Future<Map<String, dynamic>?> fetchGameTimeToBeat(int gameId) async {
+    final headers = {
+      'Client-ID': _apiId,
+      'Authorization': 'Bearer $_apiKey',
+      'Content-Type': 'application/json',
+    };
+    
+    try {
+      final response = await http.post(
+        Uri.parse(_ttbUrl),
+        headers: headers,
+        body: '''
+            fields hastily, normally, completely;
+            where game = $gameId;
+            ''',
+      );
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          final timeToBeatData = data[0];
+          return {
+            'hastily': timeToBeatData['hastily'],
+            'normally': timeToBeatData['normally'],
+            'completely': timeToBeatData['completely'],
+          };
+        }
+        return null; 
+      } else {
+        throw Exception('Failed to load time to beat data: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }  
 }
 

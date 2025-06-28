@@ -5,9 +5,9 @@ import 'dart:convert';
 
 import 'package:gamr/models/game_instance.dart';
 import '../models/game_list.dart';
-import '../models/played_game.dart';
-import '../models/played_game_list.dart';
-import '../models/current_game_session.dart';
+import '../models/past_session.dart';
+import '../models/played_session_list.dart';
+import '../models/current_session.dart';
 import '../providers/api_service_provider.dart';
 
 class GameLibraryNotifier extends Notifier<List<dynamic>> {
@@ -22,27 +22,27 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
   }
 
   void _initializeCorePlaylist() {
-    final hasCurrentlyPlaying = state.any((list) => list is PlayedGameList && list.id == currentlyPlayingId);
-    final hasCompleted = state.any((list) => list is PlayedGameList && list.id == completedId);
+    final hasCurrentlyPlaying = state.any((list) => list is PastSessionList && list.id == currentlyPlayingId);
+    final hasCompleted = state.any((list) => list is PastSessionList && list.id == completedId);
     final hasWishlist = state.any((list) => list is GameList && list.id == wishlistId);
 
     final List<dynamic> newLists = [];
 
     if (!hasCurrentlyPlaying) {
-      newLists.add(PlayedGameList(
+      newLists.add(PastSessionList(
         id: currentlyPlayingId,
         label: 'Currently Playing',
-        playedGames: [],
+        sessions: [],
         isCore: true,
         icon: Icons.play_arrow,
       ));
     }
 
     if (!hasCompleted) {
-      newLists.add(PlayedGameList(
+      newLists.add(PastSessionList(
         id: completedId,
         label: 'Completed',
-        playedGames: [],
+        sessions: [],
         isCore: true,
         icon: Icons.check_circle,
       ));
@@ -86,8 +86,8 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
   // 🎮 Core operations
   // ---------------------
 
-  void addToCurrentlyPlaying(CurrentGameSession session) {
-    final playedGame = PlayedGame(
+  void addToCurrentlyPlaying(CurrentSession session) {
+    final playedGame = PastSession(
       game: session.game,
       startedAt: session.startTime ?? DateTime.now(),
       completedAt: DateTime.fromMillisecondsSinceEpoch(0),
@@ -96,10 +96,10 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
     _addPlayedGameToCorePlaylist(currentlyPlayingId, playedGame);
   }
 
-  void addToCompleted(CurrentGameSession session) {
+  void addToCompleted(CurrentSession session) {
     _removePlayedGameFromCorePlaylist(currentlyPlayingId, session.game);
 
-    final playedGame = PlayedGame(
+    final playedGame = PastSession(
       game: session.game,
       startedAt: session.startTime ?? DateTime.now(),
       completedAt: DateTime.now(),
@@ -108,14 +108,14 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
     _addPlayedGameToCorePlaylist(completedId, playedGame);
   }
 
-  void _addPlayedGameToCorePlaylist(String playlistId, PlayedGame game) {
+  void _addPlayedGameToCorePlaylist(String playlistId, PastSession session) {
     final newState = [...state];
-    final index = newState.indexWhere((list) => list is PlayedGameList && list.id == playlistId);
+    final index = newState.indexWhere((list) => list is PastSessionList && list.id == playlistId);
     if (index != -1) {
-      final playlist = newState[index] as PlayedGameList;
-      if (!playlist.playedGames.any((g) => g.game.id == game.game.id)) {
-        final updatedGames = [...playlist.playedGames, game];
-        final updatedList = playlist.copyWith(playedGames: updatedGames);
+      final playlist = newState[index] as PastSessionList;
+      if (!playlist.sessions.any((g) => g.game.id == session.game.id)) {
+        final updatedGames = [...playlist.sessions, session];
+        final updatedList = playlist.copyWith(sessions: updatedGames);
         newState[index] = updatedList;
         state = newState;
         _saveToPrefs();
@@ -126,17 +126,17 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
   void _removePlayedGameFromCorePlaylist(String playlistId, GameInstance game) {
     final newState = [...state];
     final index = newState.indexWhere(
-      (list) => list is PlayedGameList && list.id == playlistId,
+      (list) => list is PastSessionList && list.id == playlistId,
     );
 
     if (index != -1) {
-      final playlist = newState[index] as PlayedGameList;
+      final playlist = newState[index] as PastSessionList;
 
-      final updatedGames = playlist.playedGames
+      final updatedGames = playlist.sessions
           .where((g) => g.game.id != game.id)
           .toList();
 
-      final updatedList = playlist.copyWith(playedGames: updatedGames);
+      final updatedList = playlist.copyWith(sessions: updatedGames);
       newState[index] = updatedList;
 
       state = newState;
@@ -164,7 +164,7 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
         final type = map['type']; // must be set during serialization
 
         if (type == 'played' || id == currentlyPlayingId || id == completedId) {
-          return PlayedGameList.fromJson(map);
+          return PastSessionList.fromJson(map);
         } else {
           return GameList.fromJson(map);
         }
@@ -178,17 +178,17 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
   // 🛠 Helpers
   // ---------------------
 
-  PlayedGameList? get currentlyPlayingList {
+  PastSessionList? get currentlyPlayingList {
     try {
-      return state.firstWhere((list) => list is PlayedGameList && list.id == currentlyPlayingId) as PlayedGameList;
+      return state.firstWhere((list) => list is PastSessionList && list.id == currentlyPlayingId) as PastSessionList;
     } catch (_) {
       return null;
     }
   }
 
-  PlayedGameList? get completedList {
+  PastSessionList? get completedList {
     try {
-      return state.firstWhere((list) => list is PlayedGameList && list.id == completedId) as PlayedGameList;
+      return state.firstWhere((list) => list is PastSessionList && list.id == completedId) as PastSessionList;
     } catch (_) {
       return null;
     }

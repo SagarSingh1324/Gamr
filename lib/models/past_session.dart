@@ -1,25 +1,25 @@
 import './game_instance.dart';
 
-class PlayedGame {
+class PastSession {
   final GameInstance game;
   final DateTime startedAt;
   final DateTime completedAt;
   final Duration totalPlayTime;
 
-  PlayedGame({
+  PastSession({
     required this.game,
     required this.startedAt,
     required this.completedAt,
     required this.totalPlayTime,
   });
 
-  PlayedGame copyWith({
+  PastSession copyWith({
     GameInstance? game,
     DateTime? startedAt,
     DateTime? completedAt,
     Duration? totalPlayTime,
   }) {
-    return PlayedGame(
+    return PastSession(
       game: game ?? this.game,
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
@@ -27,12 +27,12 @@ class PlayedGame {
     );
   }
 
-  factory PlayedGame.fromJson(dynamic json) {
+  factory PastSession.fromJson(dynamic json) {
     if (json == null || json is! Map<String, dynamic>) {
       throw ArgumentError('Invalid or null JSON provided to PlayedGame.fromJson');
     }
 
-    return PlayedGame(
+    return PastSession(
       game: GameInstance.fromJson(json['game']),
       startedAt: DateTime.parse(json['startedAt']),
       completedAt: DateTime.parse(json['completedAt']),

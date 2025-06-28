@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gamr/models/game_instance.dart';
 import '../models/game_list.dart';
-import '../models/played_game_list.dart';
+import '../models/played_session_list.dart';
 import '../providers/game_library_provider.dart';
 import '../widgets/game_card_small.dart';
-import '../widgets/played_game_card.dart';
+import '../widgets/past_session_card.dart';
 import 'package:share_plus/share_plus.dart';
-import '../models/played_game.dart';
+import '../models/past_session.dart';
 
 class GameListModal extends ConsumerWidget {
   final int listIndex;
@@ -58,9 +58,9 @@ class GameListModal extends ConsumerWidget {
 
                 return GestureDetector(
                   onLongPress: () => _deleteGameFromList(context, ref, gameList, listIndex, item),
-                  child: item is PlayedGame
-                      ? PlayedGameCard(
-                          playedGame: item,
+                  child: item is PastSession
+                      ? PastSessionCard(
+                          session: item,
                           onRemove: () => _deleteGameFromList(context, ref, gameList, listIndex, item),
                         )
                       : GameInstanceCardSmall(
@@ -79,7 +79,7 @@ class GameListModal extends ConsumerWidget {
     final items = _getItems(gameList);
 
     final gameIds = items.map((item) {
-      final game = item is PlayedGame ? item.game : item;
+      final game = item is PastSession ? item.game : item;
       return game.id.toString();
     }).join(',');
 
@@ -94,7 +94,7 @@ class GameListModal extends ConsumerWidget {
   }
 
   void _deleteGameFromList(BuildContext context, WidgetRef ref, dynamic gameList, int listIndex, dynamic item) {
-    final game = item is PlayedGame ? item.game : item;
+    final game = item is PastSession ? item.game : item;
 
     showDialog(
       context: context,
@@ -115,10 +115,10 @@ class GameListModal extends ConsumerWidget {
                 final updatedGames = List<GameInstance>.from(gameList.games)..remove(game);
                 final updatedList = gameList.copyWith(games: updatedGames);
                 ref.read(gameLibraryProvider.notifier).updateList(listIndex, updatedList);
-              } else if (gameList is PlayedGameList) {
-                final updatedGames = List<PlayedGame>.from(gameList.playedGames)
-                  ..removeWhere((pg) => pg.game.id == game.id);
-                final updatedList = gameList.copyWith(playedGames: updatedGames);
+              } else if (gameList is PastSessionList) {
+                final updatedGames = List<PastSession>.from(gameList.sessions)
+                  ..removeWhere((ps) => ps.game.id == game.id);
+                final updatedList = gameList.copyWith(sessions: updatedGames);
                 ref.read(gameLibraryProvider.notifier).updateList(listIndex, updatedList);
               }
 
@@ -139,7 +139,7 @@ class GameListModal extends ConsumerWidget {
   /// Returns a list of GameInstance or PlayedGame from either list type
   List<dynamic> _getItems(dynamic gameList) {
     if (gameList is GameList) return gameList.games;
-    if (gameList is PlayedGameList) return gameList.playedGames;
+    if (gameList is PastSessionList) return gameList.sessions;
     return [];
   }
 }

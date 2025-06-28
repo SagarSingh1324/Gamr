@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_list.dart';
-import '../models/played_game_list.dart';
+import '../models/played_session_list.dart';
 import '../providers/game_library_provider.dart';
 import '../providers/current_game_provider.dart'; 
 import '../widgets/currently_playing_card.dart';
@@ -76,7 +76,7 @@ class LibraryScreen extends ConsumerWidget {
                           '${gameList.label} (${_getGameCount(gameList)})',
                           style: const TextStyle(fontSize: 16, color: Colors.black),
                         ),
-                        if (gameList is PlayedGameList && gameList.isCore && gameList.icon != null)
+                        if (gameList is PastSessionList && gameList.isCore && gameList.icon != null)
                           Icon(gameList.icon, color: Colors.grey[600], size: 20),
                       ],
                     ),
@@ -294,7 +294,7 @@ class LibraryScreen extends ConsumerWidget {
 
   int _getGameCount(dynamic gameList) {
     if (gameList is GameList) return gameList.games.length;
-    if (gameList is PlayedGameList) return gameList.playedGames.length;
+    if (gameList is PastSessionList) return gameList.sessions.length;
     return 0;
   }
 }

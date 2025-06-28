@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
 import '../providers/api_service_provider.dart';
-import '../models/current_game_session.dart';
+import '../models/current_session.dart';
 
-class CurrentGameNotifier extends Notifier<CurrentGameSession?> {
+class CurrentSessionNotifier extends Notifier<CurrentSession?> {
   Timer? _ticker;
   
   @override
-  CurrentGameSession? build() {
+  CurrentSession? build() {
     return null; // start empty
   }
   
@@ -32,7 +32,7 @@ class CurrentGameNotifier extends Notifier<CurrentGameSession?> {
       // Continue
     }
   } 
-    state = CurrentGameSession(
+    state = CurrentSession(
       game: gameToUse,
       startTime: DateTime.now(),
       isPlaying: true,

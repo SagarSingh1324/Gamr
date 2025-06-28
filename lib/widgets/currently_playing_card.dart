@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
 import '../providers/current_game_provider.dart';
-import '../widgets/time_to_beat.dart'; // ✅ Step 1: Import the widget
+import '../widgets/time_to_beat.dart'; 
 
 class CurrentlyPlayingCard extends ConsumerWidget {
   final VoidCallback onMarkCompleted;
@@ -100,19 +100,41 @@ class CurrentlyPlayingCard extends ConsumerWidget {
                   ),
                 const SizedBox(height: 8),
 
-                ElevatedButton(
-                  onPressed: () {
-                    controller.markCompleted();
-                    onMarkCompleted();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          controller.markCompleted();
+                          onMarkCompleted();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text("Mark as Completed"),
+                      ),
                     ),
-                  ),
-                  child: const Text("Mark as Completed"),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // controller.logSession(); // ← Make sure this method exists
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text("Log Session"),
+                      ),
+                    ),
+                  ],
                 ),
+
                 const SizedBox(height: 12),
 
                 Row(

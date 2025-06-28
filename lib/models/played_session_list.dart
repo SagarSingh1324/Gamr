@@ -1,36 +1,36 @@
 import 'package:flutter/material.dart';
-import '../models/played_game.dart';
+import 'past_session.dart';
 
-class PlayedGameList {
+class PastSessionList {
   final String? id;           // Unique identifier for core playlists
   final String label;         // Display name
-  final List<PlayedGame> playedGames;
+  final List<PastSession> sessions;
   final bool isCore;          // Whether this is a core (non-deletable) playlist
   final IconData? icon;       // Optional icon for display
   final DateTime? createdAt;  // When the playlist was created
   
-  PlayedGameList({
+  PastSessionList({
     this.id,
     required this.label,
-    required this.playedGames,
+    required this.sessions,
     this.isCore = false,
     this.icon,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
   
   // Copy with method for immutable updates
-  PlayedGameList copyWith({
+  PastSessionList copyWith({
     String? id,
     String? label,
-    List<PlayedGame>? playedGames,
+    List<PastSession>? sessions,
     bool? isCore,
     IconData? icon,
     DateTime? createdAt,
   }) {
-    return PlayedGameList(
+    return PastSessionList(
       id: id ?? this.id,
       label: label ?? this.label,
-      playedGames: playedGames ?? this.playedGames,
+      sessions: sessions ?? this.sessions,
       isCore: isCore ?? this.isCore,
       icon: icon ?? this.icon,
       createdAt: createdAt ?? this.createdAt,
@@ -38,26 +38,26 @@ class PlayedGameList {
   }
   
   // Convenience getters
-  int get gameCount => playedGames.length;
-  bool get isEmpty => playedGames.isEmpty;
-  bool get isNotEmpty => playedGames.isNotEmpty;
+  int get gameCount => sessions.length;
+  bool get isEmpty => sessions.isEmpty;
+  bool get isNotEmpty => sessions.isNotEmpty;
   
   // Check if a game exists in this list
-  bool containsGame(PlayedGame game) {
-    return playedGames.any((g) => g.game.id == game.game.id);
+  bool containsGame(PastSession session) {
+    return sessions.any((g) => g.game.id == session.game.id);
   }
   
   Map<String, dynamic> toJson() => {
     'id': id,
     'label': label,
-    'games': playedGames.map((g) => g.toJson()).toList(),
+    'games': sessions.map((g) => g.toJson()).toList(),
     'isCore': isCore,
     'iconCodePoint': icon?.codePoint,  
     'iconFontFamily': icon?.fontFamily,
     'createdAt': createdAt?.toIso8601String(),
   };
   
-factory PlayedGameList.fromJson(Map<String, dynamic> json) {
+factory PastSessionList.fromJson(Map<String, dynamic> json) {
   IconData? iconData;
   if (json['iconCodePoint'] != null) {
     iconData = IconData(
@@ -67,21 +67,21 @@ factory PlayedGameList.fromJson(Map<String, dynamic> json) {
   }
 
   final gamesJson = json['games'];
-  final List<PlayedGame> playedGames;
+  final List<PastSession> sessions;
 
   if (gamesJson is List) {
-    playedGames = gamesJson
+    sessions = gamesJson
         .whereType<Map<String, dynamic>>()
-        .map((g) => PlayedGame.fromJson(g))
+        .map((g) => PastSession.fromJson(g))
         .toList();
   } else {
-    playedGames = [];
+    sessions = [];
   }
 
-  return PlayedGameList(
+  return PastSessionList(
     id: json['id'] as String?,
     label: json['label'] as String,
-    playedGames: playedGames,
+    sessions: sessions,
     isCore: json['isCore'] as bool? ?? false,
     icon: iconData,
     createdAt: json['createdAt'] != null 
@@ -94,7 +94,7 @@ factory PlayedGameList.fromJson(Map<String, dynamic> json) {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is PlayedGameList &&
+    return other is PastSessionList &&
         other.id == id &&
         other.label == label &&
         other.isCore == isCore;
@@ -105,6 +105,6 @@ factory PlayedGameList.fromJson(Map<String, dynamic> json) {
   
   @override
   String toString() {
-    return 'GameList(id: $id, label: $label, games: ${playedGames.length}, isCore: $isCore)';
+    return 'GameList(id: $id, label: $label, games: ${sessions.length}, isCore: $isCore)';
   }
 }

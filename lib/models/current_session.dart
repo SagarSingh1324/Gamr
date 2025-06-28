@@ -1,24 +1,24 @@
 import './game_instance.dart';
 
-class CurrentGameSession {
+class CurrentSession {
   final GameInstance game;
   final DateTime? startTime;
   final Duration elapsed;
   final bool isPlaying;
 
-  CurrentGameSession({
+  CurrentSession({
     required this.game,
     this.startTime,
     this.elapsed = Duration.zero,
     this.isPlaying = false,
   });
 
-  CurrentGameSession copyWith({
+  CurrentSession copyWith({
     DateTime? startTime,
     Duration? elapsed,
     bool? isPlaying,
   }) {
-    return CurrentGameSession(
+    return CurrentSession(
       game: game,
       startTime: startTime ?? this.startTime,
       elapsed: elapsed ?? this.elapsed,

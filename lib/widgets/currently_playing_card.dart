@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
-import '../providers/current_game_provider.dart';
+import '../providers/current_session_provider.dart';
 import '../widgets/time_to_beat.dart'; 
 
 class CurrentlyPlayingCard extends ConsumerWidget {
   final VoidCallback onMarkCompleted;
+  final VoidCallback onLogSession;
 
-  const CurrentlyPlayingCard({super.key, required this.onMarkCompleted});
+  const CurrentlyPlayingCard({
+    super.key, 
+    required this.onMarkCompleted, 
+    required this.onLogSession,
+    });
 
   String _formatDuration(Duration duration) {
     final h = duration.inHours;
@@ -33,8 +38,8 @@ class CurrentlyPlayingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(currentGameProvider);
-    final controller = ref.read(currentGameProvider.notifier);
+    final session = ref.watch(currentSessionProvider);
+    final controller = ref.read(currentSessionProvider.notifier);
 
     if (session == null) {
       return const Center(child: Text("No game is currently being tracked."));
@@ -44,7 +49,7 @@ class CurrentlyPlayingCard extends ConsumerWidget {
     final isTracking = session.isPlaying;
     final elapsed = session.elapsed;
 
-    final totalPlayed = elapsed;
+    final totalPlayed = session.totalPlaytime;
     final genreText = game.genres.isNotEmpty
         ? game.genres.map((g) => g.name).join(', ')
         : "Unknown Genre";
@@ -121,7 +126,8 @@ class CurrentlyPlayingCard extends ConsumerWidget {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          // controller.logSession(); // ← Make sure this method exists
+                          controller.logSession();
+                          onLogSession(); 
                         },
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size.fromHeight(50),
@@ -152,7 +158,7 @@ class CurrentlyPlayingCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // ✅ Progress section
+                // Progress section
                 if (isFinite && expectedTime != null) ...[
                   Text("Progress: ${_formatDuration(totalPlayed)} / ${_formatDuration(expectedTime)}"),
                   const SizedBox(height: 4),
@@ -166,7 +172,7 @@ class CurrentlyPlayingCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // ✅ TimeToBeatWidget below the progress bar
+                  // TimeToBeatWidget below the progress bar
                   TimeToBeatWidget(game: game),
                 ] else ...[
                   Text("Total Time Played: ${_formatDuration(totalPlayed)}"),
@@ -179,7 +185,7 @@ class CurrentlyPlayingCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // ✅ Still show TimeToBeatWidget even if not progressable
+                  // Still show TimeToBeatWidget even if not progressable
                   TimeToBeatWidget(game: game),
                 ],
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'past_session.dart';
 
 class PastSessionList {
-  final String? id;           // Unique identifier for core playlists
+  final String id;           // Unique identifier for core playlists
   final String label;         // Display name
   final List<PastSession> sessions;
   final bool isCore;          // Whether this is a core (non-deletable) playlist
@@ -10,7 +10,7 @@ class PastSessionList {
   final DateTime? createdAt;  // When the playlist was created
   
   PastSessionList({
-    this.id,
+    required this.id,
     required this.label,
     required this.sessions,
     this.isCore = false,
@@ -79,7 +79,7 @@ factory PastSessionList.fromJson(Map<String, dynamic> json) {
   }
 
   return PastSessionList(
-    id: json['id'] as String?,
+    id: json['id'] as String,
     label: json['label'] as String,
     sessions: sessions,
     isCore: json['isCore'] as bool? ?? false,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_list.dart';
-import '../models/played_session_list.dart';
+import '../models/past_session_list.dart';
 import '../providers/game_library_provider.dart';
-import '../providers/current_game_provider.dart'; 
+import '../providers/current_session_provider.dart'; 
 import '../widgets/currently_playing_card.dart';
 import '../widgets/game_list_modal.dart';
 
@@ -13,9 +13,9 @@ class LibraryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameLists = ref.watch(gameLibraryProvider);
-    final currentSession = ref.watch(currentGameProvider);
+    final currentSession = ref.watch(currentSessionProvider);
     final gameLibraryController = ref.read(gameLibraryProvider.notifier);
-    final gameSessionController = ref.read(currentGameProvider.notifier);
+    final gameSessionController = ref.read(currentSessionProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Library')),
@@ -31,6 +31,17 @@ class LibraryScreen extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Marked as Completed!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              onLogSession: () {
+                gameLibraryController.addToCurrentlyPlaying(currentSession);
+                gameSessionController.logSession();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Session Logged!'),
                     backgroundColor: Colors.green,
                   ),
                 );

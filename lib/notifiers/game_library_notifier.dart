@@ -6,9 +6,10 @@ import 'dart:convert';
 import 'package:gamr/models/game_instance.dart';
 import '../models/game_list.dart';
 import '../models/past_session.dart';
-import '../models/played_session_list.dart';
+import '../models/past_session_list.dart';
 import '../models/current_session.dart';
 import '../providers/api_service_provider.dart';
+import '../providers/game_library_provider.dart';
 
 class GameLibraryNotifier extends Notifier<List<dynamic>> {
   static const String currentlyPlayingId = 'core_currently_playing';
@@ -83,17 +84,35 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
   }
 
   // ---------------------
-  // 🎮 Core operations
+  // Core operations
   // ---------------------
 
   void addToCurrentlyPlaying(CurrentSession session) {
-    final playedGame = PastSession(
-      game: session.game,
-      startedAt: session.startTime ?? DateTime.now(),
-      completedAt: DateTime.fromMillisecondsSinceEpoch(0),
-      totalPlayTime: session.elapsed,
-    );
-    _addPlayedGameToCorePlaylist(currentlyPlayingId, playedGame);
+    final playlist = ref.read(gameLibraryProvider.notifier).currentlyPlayingList;
+    if (playlist == null) return; // Early return if playlist doesn't exist
+    
+    final index = playlist.sessions.indexWhere((cp) => cp.game.id == session.game.id);
+    if (index == -1) {
+      // Game not in currently playing — add it
+      final newPlayedGame = PastSession(
+        game: session.game,
+        startedAt: session.startTime ?? DateTime.now(),
+        completedAt: DateTime.fromMillisecondsSinceEpoch(0),
+        totalPlayTime: session.elapsed,
+      );
+      _addPlayedGameToCorePlaylist(currentlyPlayingId, newPlayedGame);
+    } else {
+      // Game already exists — update playtime
+      final existing = playlist.sessions[index];
+      final updated = PastSession(
+        game: existing.game,
+        startedAt: existing.startedAt,
+        completedAt: existing.completedAt,
+        totalPlayTime: existing.totalPlayTime + session.elapsed,
+      );
+      // Replace the old one with the updated session
+      playlist.sessions[index] = updated;
+    }
   }
 
   void addToCompleted(CurrentSession session) {
@@ -103,7 +122,7 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
       game: session.game,
       startedAt: session.startTime ?? DateTime.now(),
       completedAt: DateTime.now(),
-      totalPlayTime: session.elapsed,
+      totalPlayTime: session.totalPlaytime,
     );
     _addPlayedGameToCorePlaylist(completedId, playedGame);
   }
@@ -144,7 +163,7 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
     }
   }
   // ---------------------
-  // 💾 Persistence
+  // Persistence
   // ---------------------
 
   Future<void> _saveToPrefs() async {
@@ -175,31 +194,19 @@ class GameLibraryNotifier extends Notifier<List<dynamic>> {
   }
 
   // ---------------------
-  // 🛠 Helpers
+  // Helpers
   // ---------------------
 
   PastSessionList? get currentlyPlayingList {
-    try {
       return state.firstWhere((list) => list is PastSessionList && list.id == currentlyPlayingId) as PastSessionList;
-    } catch (_) {
-      return null;
-    }
   }
 
   PastSessionList? get completedList {
-    try {
       return state.firstWhere((list) => list is PastSessionList && list.id == completedId) as PastSessionList;
-    } catch (_) {
-      return null;
-    }
   }
 
   GameList? get wishlistList {
-    try {
       return state.firstWhere((list) => list is GameList && list.id == wishlistId) as GameList;
-    } catch (_) {
-      return null;
-    }
   }
 
   Future<void> importGamesFromIdList(String listName, List<int> ids) async {

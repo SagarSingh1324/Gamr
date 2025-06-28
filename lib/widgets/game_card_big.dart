@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
 import '../models/game_list.dart';
 import '../providers/game_library_provider.dart';
-import '../providers/current_game_provider.dart';
+import '../providers/current_session_provider.dart';
 
 class GameInstanceCardBig extends StatelessWidget {
   final GameInstance item;
@@ -83,7 +83,7 @@ class GameInstanceCardBig extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.play_arrow),
                         onPressed: () {
-                          final controller = ref.read(currentGameProvider.notifier);
+                          final controller = ref.read(currentSessionProvider.notifier);
                           controller.startGame(item);
                           onNavigateToLibrary?.call();
                         },

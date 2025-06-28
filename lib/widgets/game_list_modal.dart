@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gamr/models/game_instance.dart';
 import '../models/game_list.dart';
-import '../models/played_session_list.dart';
+import '../models/past_session_list.dart';
 import '../providers/game_library_provider.dart';
 import '../widgets/game_card_small.dart';
 import '../widgets/past_session_card.dart';

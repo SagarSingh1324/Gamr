@@ -69,7 +69,7 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
         label: 'Currently Playing',
         sessions: [],
         isCore: true,
-        icon: Icons.play_arrow,
+        iconKey: 'play',
       ));
     }
 
@@ -79,7 +79,7 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
         label: 'Completed',
         sessions: [],
         isCore: true,
-        icon: Icons.check_circle,
+        iconKey: 'check_circle',
       ));
     }
 
@@ -101,7 +101,7 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
         label: 'Wishlist',
         games: [],
         isCore: true,
-        icon: Icons.favorite,
+        iconKey: 'favorite', // ✅ updated
       ));
     }
 

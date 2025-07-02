@@ -3,11 +3,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/explore_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/library_screen.dart';
+import 'models/icons_preserver.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async{
   await dotenv.load(fileName: ".env");
- 
+  IconPreserver.preserveIcons();
   runApp(
     const ProviderScope(
         child: MyApp(),

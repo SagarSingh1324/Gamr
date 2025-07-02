@@ -198,7 +198,7 @@ class GameInstanceCardBig extends StatelessWidget {
                           label: list.label,
                           games: updatedGames,
                           isCore: list.isCore,
-                          icon: list.icon,
+                          iconKey: list.iconKey, // ✅ changed from icon to iconKey
                         );
                         notifier.updateList(listId, updatedList);
                       }

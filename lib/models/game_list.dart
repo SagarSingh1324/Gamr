@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import './game_instance.dart';
 
 class GameList {
-  final String? id;           // Unique identifier for core playlists
-  final String label;         // Display name
+  final String id;        
+  final String label;        
   final List<GameInstance> games;
-  final bool isCore;          // Whether this is a core (non-deletable) playlist
-  final IconData? icon;       // Optional icon for display
-  final DateTime? createdAt;  // When the playlist was created
+  final bool isCore;        
+  final IconData? icon;    
+  final DateTime? createdAt; 
   
   GameList({
-    this.id,
+    required this.id,
     required this.label,
     required this.games,
     this.isCore = false,
@@ -67,7 +67,7 @@ class GameList {
     }
     
     return GameList(
-      id: json['id'] as String?,
+      id: json['id'] as String,
       label: json['label'] as String,
       games: (json['games'] as List)
           .map((g) => GameInstance.fromJson(g))

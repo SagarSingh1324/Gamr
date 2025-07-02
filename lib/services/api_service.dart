@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiService {
   static String get _url => '${dotenv.env['BASE_URL'] ?? ''}/games';
   static String get _ttbUrl => '${dotenv.env['BASE_URL'] ?? ''}/game_time_to_beats';
+  static String get _popUrl => '${dotenv.env['BASE_URL'] ?? ''}/popularity_primitives';
   static String get _apiId => dotenv.env['API_ID'] ?? '';
   static String get _apiKey => dotenv.env['API_KEY'] ?? '';
 
@@ -81,7 +82,7 @@ class ApiService {
         body: '''
             fields id, name, summary, cover.url,genres.name,game_modes;
             where id = $id;
-            limit 10;
+            limit 1;
             ''',
       );
 
@@ -131,4 +132,34 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }  
+
+  Future<List<Map<String, dynamic>>> fetchGameByPop(int popType) async {
+    final headers = {
+      'Client-ID': _apiId,
+      'Authorization': 'Bearer $_apiKey',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(_popUrl),
+        headers: headers,
+        body: '''
+            fields game_id,value,popularity_type;
+            sort value desc; 
+            limit 10; 
+            where popularity_type = $popType;
+            ''',
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to load explore items: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
 }

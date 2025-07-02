@@ -13,33 +13,13 @@ class CurrentSessionNotifier extends Notifier<CurrentSession?> {
   CurrentSession? build() {
     return null; // start empty
   }
-  
-  // // Is the current session's game in Currently Playing?
-  // bool get isInCurrentlyPlaying {
-  //   final current = state;
-  //   if (current == null) return false;
-
-  //   final list = ref.read(gameLibraryProvider.notifier).currentlyPlayingList;
-  //   if (list == null) return false;
-  //   return list.sessions.any((s) => s.game.id == current.game.id);
-  // }
-
-  // // Is the current session's game in Completed?
-  // bool get isInCompleted {
-  //   final current = state;
-  //   if (current == null) return false;
-
-  //   final list = ref.read(gameLibraryProvider.notifier).completedList;
-  //   if (list == null) return false;
-  //   return list.sessions.any((s) => s.game.id == current.game.id);
-  // }
 
   Future<void> startGame(GameInstance game) async {
     _ticker?.cancel();
     
     // Check if we need to fetch timeToBeat data
     GameInstance gameToUse = game;
-    if (game.timeToBeat == null && (game.gameModes.contains(1) || game.gameModes.contains(3))) {
+    if (game.timeToBeat == null) {
 
       try {
         final timeToBeatData =
@@ -56,25 +36,25 @@ class CurrentSessionNotifier extends Notifier<CurrentSession?> {
     } 
 
     // Check past playtime
-    final library = ref.read(gameLibraryProvider.notifier);
-    final currentlyPlaying = library.currentlyPlayingList;
-    final completed = library.completedList;
+    final currentlyPlaying = ref.read(currentlyPlayingListProvider);
+    final completed= ref.read(completedListProvider);
 
     PastSession? existingSession;
 
-    for (final session in [...?currentlyPlaying?.sessions, ...?completed?.sessions]) {
+    for (final session in [...currentlyPlaying.sessions, ...completed.sessions]) {
       if (session.game.id == game.id) {
         existingSession = session;
         break;
       }
     }
 
-    final previousPlaytime = existingSession?.totalPlayTime ?? Duration(minutes:10);
+    final previousPlaytime = existingSession?.totalPlayTime;
 
     state = CurrentSession(
       game: gameToUse,
       startTime: DateTime.now(),
-      totalPlaytime: previousPlaytime,
+      totalPlaytime: previousPlaytime ?? Duration(seconds:0),
+      elapsed: Duration(seconds:0),
       isPlaying: true,
     );
     _startTimer();

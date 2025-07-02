@@ -4,41 +4,93 @@ import '../models/past_session_list.dart';
 import '../models/game_instance.dart';
 import '../notifiers/game_library_notifier.dart';
 
-// Main game library provider (holds both GameList and PlayedGameList)
+// ===========================================
+// MAIN PROVIDER
+// ===========================================
 final gameLibraryProvider =
-    NotifierProvider<GameLibraryNotifier, List<dynamic>>(GameLibraryNotifier.new);
+    AsyncNotifierProvider<GameLibraryNotifier, List<dynamic>>(GameLibraryNotifier.new);
 
-// 🎮 Derived providers for core played lists
-final currentlyPlayingListProvider = Provider<PastSessionList?>((ref) {
+// ===========================================
+// CORE LISTS (PastSessionList) - PROVIDERS
+// ===========================================
+
+// Currently Playing list provider
+final currentlyPlayingListProvider = Provider<PastSessionList>((ref) {
   return ref.read(gameLibraryProvider.notifier).currentlyPlayingList;
 });
 
-final completedListProvider = Provider<PastSessionList?>((ref) {
+// Completed list provider
+final completedListProvider = Provider<PastSessionList>((ref) {
   return ref.read(gameLibraryProvider.notifier).completedList;
 });
 
-final wishlistProvider = Provider<GameList?>((ref) {
-  return ref.read(gameLibraryProvider.notifier).wishlistList;
+// All core lists (PastSessionList) provider
+final coreSessionListsProvider = Provider<AsyncValue<List<PastSessionList>>>((ref) {
+  final allListsAsync = ref.watch(gameLibraryProvider);
+  return allListsAsync.when(
+    data: (lists) => AsyncValue.data(lists.whereType<PastSessionList>().toList()),
+    loading: () => const AsyncValue.loading(),
+    error: (error, stack) => AsyncValue.error(error, stack),
+  );
 });
 
-// 📁 Provider for custom user-created (non-core) GameLists
+// ===========================================
+// NON-CORE LISTS (GameList) - PROVIDERS
+// ===========================================
+
+// Wishlist provider
+final wishlistProvider = Provider<GameList?>((ref) {
+  return ref.read(gameLibraryProvider.notifier).wishlist;
+});
+
+// User-created (non-core) GameLists provider
 final customGameListsProvider = Provider<List<GameList>>((ref) {
-  final allLists = ref.watch(gameLibraryProvider);
-  return allLists
-      .whereType<GameList>()
-      .where((list) => list.isCore != true)
+  return ref.read(gameLibraryProvider.notifier).nonCoreLists;
+});
+
+// All non-core lists (GameList) including wishlist
+final nonCoreGameListsProvider = Provider<List<GameList>>((ref) {
+  final allListsAsync = ref.watch(gameLibraryProvider);
+
+  return allListsAsync.when(
+    data: (lists) => lists.whereType<GameList>().toList(),
+    loading: () => [],
+    error: (_, __) => [],
+  );
+});
+
+// ===========================================
+// COMBINED PROVIDERS
+// ===========================================
+
+// All core lists (both PastSessionList and default GameList like wishlist)
+final allCoreListsProvider = Provider<List<dynamic>>((ref) {
+  final allListsAsync = ref.watch(gameLibraryProvider);
+  return (allListsAsync.value ?? [])
+      .where((list) => list.isCore == true)
       .toList();
 });
 
-// Core lists (both GameList and PlayedGameList)
-final coreGameListsProvider = Provider<List<dynamic>>((ref) {
-  final allLists = ref.watch(gameLibraryProvider);
-  return allLists.where((list) => list.isCore == true).toList();
+
+// All lists separated by type
+final gameListsByTypeProvider = Provider<Map<String, List<dynamic>>>((ref) {
+  final allListsAsync = ref.watch(gameLibraryProvider);
+  final lists = allListsAsync.value ?? [];
+
+  return {
+    'coreSessions': lists.whereType<PastSessionList>().toList(),
+    'gameCollections': lists.whereType<GameList>().toList(),
+  };
 });
+
+// ===========================================
+// UTILITY PROVIDERS
+// ===========================================
 
 // Check if a game exists in any list
 final gameInListProvider = Provider.family<dynamic, GameInstance>((ref, game) {
-  final allLists = ref.watch(gameLibraryProvider);
+  final allListsAsync = ref.watch(gameLibraryProvider);
+  final allLists = allListsAsync.value ?? [];
 
   for (final list in allLists) {
     if (list is GameList && list.games.any((g) => g.id == game.id)) {
@@ -54,10 +106,43 @@ final gameInListProvider = Provider.family<dynamic, GameInstance>((ref, game) {
 
 // Get count of games in a list by ID
 final listGamesCountProvider = Provider.family<int, String>((ref, listId) {
-  final allLists = ref.watch(gameLibraryProvider);
-  final list = allLists.firstWhere((l) => l.id == listId, orElse: () => null);
+  final allListsAsync = ref.watch(gameLibraryProvider);
+  final allLists = allListsAsync.value ?? [];
+
+  final list = allLists.firstWhere(
+    (l) => l.id == listId,
+    orElse: () => null,
+  );
 
   if (list is GameList) return list.games.length;
   if (list is PastSessionList) return list.sessions.length;
   return 0;
+});
+
+// Get a specific list by ID
+final listByIdProvider = Provider.family<dynamic, String>((ref, listId) {
+  final allListsAsync = ref.watch(gameLibraryProvider);
+  final allLists = allListsAsync.value ?? [];
+
+  return allLists.firstWhere(
+    (l) => l.id == listId,
+    orElse: () => null,
+  );
+});
+
+// Check if a list is a core list
+final isListCoreProvider = Provider.family<bool, String>((ref, listId) {
+  final list = ref.watch(listByIdProvider(listId));
+  return list?.isCore == true;
+});
+
+// Get all user-created lists (excludes all core lists)
+final userCreatedListsProvider = Provider<List<GameList>>((ref) {
+  final allListsAsync = ref.watch(gameLibraryProvider);
+  final allLists = allListsAsync.value ?? [];
+
+  return allLists
+      .whereType<GameList>()
+      .where((list) => list.isCore != true)
+      .toList();
 });

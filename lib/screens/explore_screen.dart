@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_instance.dart';
 import '../providers/explore_provider.dart';
-import '../widgets/game_card_big.dart';
+import '../widgets/game_instance_card_big.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
 
@@ -53,7 +53,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Explore'),
+        title: const Text('By Genre'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -168,7 +168,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     );
   }
 
-  Widget _buildHorizontalList(BuildContext context, WidgetRef ref, String genre, List<GameInstance> games) {
+  Widget _buildHorizontalList(
+    BuildContext context, 
+    WidgetRef ref, 
+    String genre, 
+    List<GameInstance> games
+    ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

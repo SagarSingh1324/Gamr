@@ -45,7 +45,7 @@ class MainTabScreenState extends State<MainTabScreen> {
   // Build screens with navigation callback
   List<Widget> get _screens => [
     ExploreScreen(onNavigateToLibrary: navigateToLibrary),
-    HomeScreen(),
+    HomeScreen(onNavigateToLibrary: navigateToLibrary),
     LibraryScreen(),
   ];
 

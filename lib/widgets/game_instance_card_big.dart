@@ -146,9 +146,10 @@ class GameInstanceCardBig extends StatelessWidget {
     );
   }
 
+
   void _addToLibrary(BuildContext context) {
-    final gameLists = ref.read(gameLibraryProvider);
-    final selectedLists = <String>{};
+    final gameLists = ref.read(nonCoreGameListsProvider);
+    final selectedListIds = <String>{}; // Make it clear these are IDs
 
     showDialog(
       context: context,
@@ -160,16 +161,16 @@ class GameInstanceCardBig extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: gameLists.map((list) {
-                  final isSelected = selectedLists.contains(list.label);
+                  final isSelected = selectedListIds.contains(list.id); // Use list.id
                   return CheckboxListTile(
-                    title: Text(list.label),
+                    title: Text(list.label), // Display the label
                     value: isSelected,
                     onChanged: (checked) {
                       setState(() {
                         if (checked == true) {
-                          selectedLists.add(list.label);
+                          selectedListIds.add(list.id); // Store the ID
                         } else {
-                          selectedLists.remove(list.label);
+                          selectedListIds.remove(list.id); // Remove the ID
                         }
                       });
                     },
@@ -185,13 +186,22 @@ class GameInstanceCardBig extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {
                   final notifier = ref.read(gameLibraryProvider.notifier);
-                  for (var list in gameLists) {
-                    if (selectedLists.contains(list.label)) {
+                  final currentLists = ref.read(nonCoreGameListsProvider);
+                  
+                  for (var listId in selectedListIds) { // Use the IDs
+                    final index = currentLists.indexWhere((list) => list.id == listId);
+                    if (index != -1) {
+                      final list = currentLists[index];
                       final updatedGames = List<GameInstance>.from(list.games);
                       if (!updatedGames.any((g) => g.id == item.id)) {
                         updatedGames.add(item);
-                        final updatedList = GameList(label: list.label, games: updatedGames);
-                        final index = gameLists.indexOf(list);
+                        final updatedList = GameList(
+                          id: list.id,
+                          label: list.label,
+                          games: updatedGames,
+                          isCore: list.isCore,
+                          icon: list.icon,
+                        );
                         notifier.updateList(index, updatedList);
                       }
                     }

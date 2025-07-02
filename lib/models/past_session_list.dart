@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'past_session.dart';
 
 class PastSessionList {
-  final String id;           // Unique identifier for core playlists
-  final String label;         // Display name
+  final String id;          
+  final String label;       
   final List<PastSession> sessions;
-  final bool isCore;          // Whether this is a core (non-deletable) playlist
-  final IconData? icon;       // Optional icon for display
-  final DateTime? createdAt;  // When the playlist was created
+  final bool isCore;       
+  final IconData? icon;      
+  final DateTime? createdAt; 
   
   PastSessionList({
     required this.id,

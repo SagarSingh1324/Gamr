@@ -14,13 +14,8 @@ class TimeToBeatWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isMultiplayerOnly = game.gameModes.length == 1 && game.gameModes.contains(2);
 
-    if (isMultiplayerOnly) {
-      return const Text('Time to Beat: N/A (Multiplayer game)');
-    }
-
-    if (game.gameModes.isEmpty || game.timeToBeat == null) {
+    if ( game.timeToBeat == null) {
       return const Text('Time to Beat: Not available');
     }
 

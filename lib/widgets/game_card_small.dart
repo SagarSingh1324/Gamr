@@ -64,9 +64,24 @@ class GameInstanceCardSmall extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ID: ${item.id}'),
-            const SizedBox(height: 8),
             Text('Name: ${item.name}'),
+            const SizedBox(height: 8),
+            Text('Genres: ${item.genres.isNotEmpty 
+                ? item.genres.map((genre) => genre.name).join(', ')
+                : 'No genres available'}'),
+            const SizedBox(height: 8),
+            Text('Modes: ${item.gameModes.isEmpty ? 'Not specified' : item.gameModes.map((mode) {
+              switch (mode) {
+                case 1:
+                  return 'Singleplayer';
+                case 2:
+                  return 'Multiplayer';
+                case 3:
+                  return 'Co-Op';
+                default:
+                  return 'Unknown';
+              }
+            }).join(', ')}'),
             const SizedBox(height: 8),
             Text('Summary: ${item.summary}'),
           ],

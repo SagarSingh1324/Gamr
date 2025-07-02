@@ -31,7 +31,7 @@ class PastSessionCard extends StatelessWidget {
           children: [
             Text('Started: ${session.startedAt.toLocal().toString().split(' ')[0]}'),
             Text('Completed: $completedText'),
-            Text('Playtime: ${_formatDuration(session.totalPlayTime)}'),
+            Text('Playtime: ${_formatDuration(session.totalPlaytime)}'),
           ],
         ),
       ),

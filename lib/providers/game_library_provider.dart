@@ -16,12 +16,26 @@ final gameLibraryProvider =
 
 // Currently Playing list provider
 final currentlyPlayingListProvider = Provider<PastSessionList>((ref) {
-  return ref.read(gameLibraryProvider.notifier).currentlyPlayingList;
+  final gameLibrary = ref.watch(gameLibraryProvider); // Use watch, not read
+  return gameLibrary.when(
+    data: (lists) => lists
+        .whereType<PastSessionList>()
+        .firstWhere((list) => list.id == GameLibraryNotifier.currentlyPlayingId),
+    loading: () => PastSessionList(id: 'loading', label: 'Loading', sessions: []),
+    error: (_, __) => PastSessionList(id: 'error', label: 'Error', sessions: []),
+  );
 });
 
 // Completed list provider
 final completedListProvider = Provider<PastSessionList>((ref) {
-  return ref.read(gameLibraryProvider.notifier).completedList;
+  final gameLibrary = ref.watch(gameLibraryProvider); // Use watch, not read
+  return gameLibrary.when(
+    data: (lists) => lists
+        .whereType<PastSessionList>()
+        .firstWhere((list) => list.id == GameLibraryNotifier.currentlyPlayingId),
+    loading: () => PastSessionList(id: 'loading', label: 'Loading', sessions: []),
+    error: (_, __) => PastSessionList(id: 'error', label: 'Error', sessions: []),
+  );
 });
 
 // All core lists (PastSessionList) provider

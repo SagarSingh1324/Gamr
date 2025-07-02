@@ -160,7 +160,7 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
           game: session.game,
           startedAt: session.startTime ?? DateTime.now(),
           completedAt: DateTime.fromMillisecondsSinceEpoch(0), // Not completed yet
-          totalPlayTime: (session.totalPlaytime + session.elapsed),
+          totalPlaytime: (session.totalPlaytime + session.elapsed),
         );
         
         final updatedSessions = [...playlist.sessions, newSession];
@@ -173,7 +173,7 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
           game: existing.game,
           startedAt: existing.startedAt,
           completedAt: existing.completedAt,
-          totalPlayTime: (existing.totalPlayTime + session.elapsed),
+          totalPlaytime: (existing.totalPlaytime + session.elapsed),
         );
         
         final updatedSessions = [...playlist.sessions];
@@ -206,7 +206,7 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
           game: session.game,
           startedAt: session.startTime ?? DateTime.now(),
           completedAt: DateTime.now(), // Mark as completed now
-          totalPlayTime: (session.totalPlaytime + session.elapsed),
+          totalPlaytime: (session.totalPlaytime + session.elapsed),
         );
         
         final updatedSessions = [...playlist.sessions, newSession];
@@ -219,7 +219,7 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
           game: existing.game,
           startedAt: existing.startedAt,
           completedAt: DateTime.now(), // Update completion time
-          totalPlayTime: (existing.totalPlayTime + session.elapsed),
+          totalPlaytime: (existing.totalPlaytime + session.elapsed),
         );
         
         final updatedSessions = [...playlist.sessions];

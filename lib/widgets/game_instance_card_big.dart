@@ -147,7 +147,7 @@ class GameInstanceCardBig extends StatelessWidget {
 
   void _addToLibrary(BuildContext context) {
     final gameLists = ref.read(nonCoreGameListsProvider);
-    final selectedListIds = <String>{}; // Make it clear these are IDs
+    final selectedListIds = <String>{}; 
 
     showDialog(
       context: context,
@@ -159,16 +159,16 @@ class GameInstanceCardBig extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: gameLists.map((list) {
-                  final isSelected = selectedListIds.contains(list.id); // Use list.id
+                  final isSelected = selectedListIds.contains(list.id); 
                   return CheckboxListTile(
-                    title: Text(list.label), // Display the label
+                    title: Text(list.label), 
                     value: isSelected,
                     onChanged: (checked) {
                       setState(() {
                         if (checked == true) {
-                          selectedListIds.add(list.id); // Store the ID
+                          selectedListIds.add(list.id);
                         } else {
-                          selectedListIds.remove(list.id); // Remove the ID
+                          selectedListIds.remove(list.id);
                         }
                       });
                     },
@@ -186,7 +186,7 @@ class GameInstanceCardBig extends StatelessWidget {
                   final notifier = ref.read(gameLibraryProvider.notifier);
                   final currentLists = ref.read(nonCoreGameListsProvider);
                   
-                  for (var listId in selectedListIds) { // Use the IDs
+                  for (var listId in selectedListIds) { 
                     final index = currentLists.indexWhere((list) => list.id == listId);
                     if (index != -1) {
                       final list = currentLists[index];

@@ -4,26 +4,26 @@ class PastSession {
   final GameInstance game;
   final DateTime startedAt;
   final DateTime completedAt;
-  final Duration totalPlayTime;
+  final Duration totalPlaytime;
 
   PastSession({
     required this.game,
     required this.startedAt,
     required this.completedAt,
-    required this.totalPlayTime,
+    required this.totalPlaytime,
   });
 
   PastSession copyWith({
     GameInstance? game,
     DateTime? startedAt,
     DateTime? completedAt,
-    Duration? totalPlayTime,
+    Duration? totalPlaytime,
   }) {
     return PastSession(
       game: game ?? this.game,
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
-      totalPlayTime: totalPlayTime ?? this.totalPlayTime,
+      totalPlaytime: totalPlaytime ?? this.totalPlaytime,
     );
   }
 
@@ -36,7 +36,7 @@ class PastSession {
       game: GameInstance.fromJson(json['game']),
       startedAt: DateTime.parse(json['startedAt']),
       completedAt: DateTime.parse(json['completedAt']),
-      totalPlayTime: Duration(seconds: json['totalPlayTime']),
+      totalPlaytime: Duration(seconds: json['totalPlaytime']),
     );
   }
 
@@ -45,7 +45,7 @@ class PastSession {
       'game': game.toJson(),
       'startedAt': startedAt.toIso8601String(),
       'completedAt': completedAt.toIso8601String(),
-      'totalPlayTime': totalPlayTime.inSeconds,
+      'totalPlaytime': totalPlaytime.inSeconds,
     };
   }
 }

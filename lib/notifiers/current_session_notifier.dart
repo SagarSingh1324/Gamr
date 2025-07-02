@@ -16,6 +16,24 @@ class CurrentSessionNotifier extends Notifier<CurrentSession?> {
 
   Future<void> startGame(GameInstance game) async {
     _ticker?.cancel();
+
+    // First, save the currently active session if one exists
+    if (state != null) {
+      final gameLibrary = ref.read(gameLibraryProvider.notifier);
+      
+      // Update the elapsed time before saving
+      final currentElapsed = state!.isPlaying 
+          ? DateTime.now().difference(state!.startTime!)
+          : state!.elapsed;
+      
+      final sessionToSave = state!.copyWith(
+        elapsed: currentElapsed,
+        isPlaying: false,
+      );
+      
+      // Save current session to currently playing list
+      gameLibrary.addToCurrentlyPlaying(sessionToSave);
+    }
     
     // Check if we need to fetch timeToBeat data
     GameInstance gameToUse = game;
@@ -36,8 +54,9 @@ class CurrentSessionNotifier extends Notifier<CurrentSession?> {
     } 
 
     // Check past playtime
-    final currentlyPlaying = ref.read(currentlyPlayingListProvider);
-    final completed= ref.read(completedListProvider);
+    final gameLibrary = ref.read(gameLibraryProvider.notifier);
+    final currentlyPlaying = gameLibrary.currentlyPlayingList; 
+    final completed = gameLibrary.completedList;    
 
     PastSession? existingSession;
 
@@ -48,7 +67,7 @@ class CurrentSessionNotifier extends Notifier<CurrentSession?> {
       }
     }
 
-    final previousPlaytime = existingSession?.totalPlayTime;
+    final previousPlaytime = existingSession?.totalPlaytime;
 
     state = CurrentSession(
       game: gameToUse,

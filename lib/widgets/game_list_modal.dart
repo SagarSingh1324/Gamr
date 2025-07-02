@@ -10,8 +10,8 @@ import 'package:share_plus/share_plus.dart';
 import '../models/past_session.dart';
 
 class GameListModal extends ConsumerWidget {
-  final int listIndex;
-  const GameListModal({super.key, required this.listIndex});
+  final String listId; // Changed from int to String
+  const GameListModal({super.key, required this.listId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,8 +19,14 @@ class GameListModal extends ConsumerWidget {
 
     return gameListsAsync.when(
       data: (gameLists) {
-        // Check if the list index is valid
-        if (listIndex >= gameLists.length) {
+        // Find the list by ID instead of using index
+        final gameList = gameLists.firstWhere(
+          (list) => list.id == listId,
+          orElse: () => null,
+        );
+
+        // Check if the list was found
+        if (gameList == null) {
           return Container(
             padding: const EdgeInsets.all(16),
             height: MediaQuery.of(context).size.height * 0.9,
@@ -44,7 +50,6 @@ class GameListModal extends ConsumerWidget {
           );
         }
 
-        final gameList = gameLists[listIndex];
         final items = _getItems(gameList);
 
         return Container(
@@ -106,11 +111,11 @@ class GameListModal extends ConsumerWidget {
                           final item = items[index];
 
                           return GestureDetector(
-                            onLongPress: () => _deleteGameFromList(context, ref, gameList, listIndex, item),
+                            onLongPress: () => _deleteGameFromList(context, ref, gameList, item),
                             child: item is PastSession
                                 ? PastSessionCard(
                                     session: item,
-                                    onRemove: () => _deleteGameFromList(context, ref, gameList, listIndex, item),
+                                    onRemove: () => _deleteGameFromList(context, ref, gameList, item),
                                   )
                                 : GameInstanceCardSmall(
                                     item: item as GameInstance,
@@ -145,9 +150,9 @@ class GameListModal extends ConsumerWidget {
           children: [
             const Icon(Icons.error, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error loading game lists',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -184,7 +189,7 @@ class GameListModal extends ConsumerWidget {
       return game.id.toString();
     }).join(',');
 
-    final text = 'Game IDs in "${gameList.label}":\n[$gameIds]';
+    final text = '"${gameList.label}"\n[$gameIds]'; // Simplified format for sharing
 
     SharePlus.instance.share(
       ShareParams(
@@ -194,7 +199,7 @@ class GameListModal extends ConsumerWidget {
     );
   }
 
-  void _deleteGameFromList(BuildContext context, WidgetRef ref, dynamic gameList, int listIndex, dynamic item) {
+  void _deleteGameFromList(BuildContext context, WidgetRef ref, dynamic gameList, dynamic item) {
     final game = item is PastSession ? item.game : item;
 
     showDialog(
@@ -219,12 +224,12 @@ class GameListModal extends ConsumerWidget {
                 if (gameList is GameList) {
                   final updatedGames = List<GameInstance>.from(gameList.games)..remove(game);
                   final updatedList = gameList.copyWith(games: updatedGames);
-                  ref.read(gameLibraryProvider.notifier).updateList(listIndex, updatedList);
+                  ref.read(gameLibraryProvider.notifier).updateList(gameList.id, updatedList);
                 } else if (gameList is PastSessionList) {
                   final updatedSessions = List<PastSession>.from(gameList.sessions)
                     ..removeWhere((ps) => ps.game.id == game.id);
                   final updatedList = gameList.copyWith(sessions: updatedSessions);
-                  ref.read(gameLibraryProvider.notifier).updateList(listIndex, updatedList);
+                  ref.read(gameLibraryProvider.notifier).updateList(gameList.id, updatedList);
                 }
 
                 Navigator.of(context).pop();

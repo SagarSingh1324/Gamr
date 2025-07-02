@@ -108,8 +108,6 @@ class GameInstanceCardBig extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ID: ${item.id}'),
-            const SizedBox(height: 8),
             Text('Name: ${item.name}'),
             const SizedBox(height: 8),
             Text('Genres: ${item.genres.isNotEmpty 
@@ -202,7 +200,7 @@ class GameInstanceCardBig extends StatelessWidget {
                           isCore: list.isCore,
                           icon: list.icon,
                         );
-                        notifier.updateList(index, updatedList);
+                        notifier.updateList(listId, updatedList);
                       }
                     }
                   }

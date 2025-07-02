@@ -127,11 +127,14 @@ class GameLibraryNotifier extends AsyncNotifier<List<dynamic>> {
     _saveToPrefs();
   }
 
-  void updateList(int index, dynamic newList) {
+  void updateList(String listId, dynamic newList) {
     final current = [...(state.value ?? [])];
-    current[index] = newList;
-    state = AsyncValue.data(current);
-    _saveToPrefs();
+    final index = current.indexWhere((l) => l.id == listId);
+    if (index != -1) {
+      current[index] = newList;
+      state = AsyncValue.data(current);
+      _saveToPrefs();
+    }
   }
 
   // ===========================================

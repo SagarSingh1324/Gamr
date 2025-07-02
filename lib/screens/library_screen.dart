@@ -12,7 +12,7 @@ class LibraryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final coreSessionListsAsync = ref.watch(coreSessionListsProvider); // Changed to store AsyncValue
+    final coreSessionListsAsync = ref.watch(coreSessionListsProvider);
     final nonCoreGameLists = ref.watch(nonCoreGameListsProvider);
     final currentSession = ref.watch(currentSessionProvider);
     final gameLibraryController = ref.read(gameLibraryProvider.notifier);
@@ -76,7 +76,6 @@ class LibraryScreen extends ConsumerWidget {
                         context,
                         ref,
                         sessionList,
-                        _findListIndex(ref, sessionList),
                       )),
 
                   const SizedBox(height: 24),
@@ -94,7 +93,6 @@ class LibraryScreen extends ConsumerWidget {
                         context,
                         ref,
                         gameList,
-                        _findListIndex(ref, gameList),
                       )),
 
                   const SizedBox(height: 16),
@@ -148,7 +146,7 @@ class LibraryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCoreListTile(BuildContext context, WidgetRef ref, PastSessionList sessionList, int index) {
+  Widget _buildCoreListTile(BuildContext context, WidgetRef ref, PastSessionList sessionList) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
@@ -171,13 +169,13 @@ class LibraryScreen extends ConsumerWidget {
             style: TextStyle(color: Colors.grey[600]),
           ),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () => _showBottomSheet(context, ref, index),
+          onTap: () => _showBottomSheet(context, ref, sessionList.id),
         ),
       ),
     );
   }
 
-  Widget _buildNonCoreListTile(BuildContext context, WidgetRef ref, GameList gameList, int index) {
+  Widget _buildNonCoreListTile(BuildContext context, WidgetRef ref, GameList gameList) {
     final isWishlist = gameList.id == 'non_core_wishlist';
     
     return Padding(
@@ -212,22 +210,17 @@ class LibraryScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          onTap: () => _showBottomSheet(context, ref, index),
+          onTap: () => _showBottomSheet(context, ref, gameList.id),
         ),
       ),
     );
   }
 
-  int _findListIndex(WidgetRef ref, dynamic list) {
-    final allLists = ref.read(gameLibraryProvider).value ?? [];
-    return allLists.indexWhere((l) => l.id == list.id);
-  }
-
-  void _showBottomSheet(BuildContext context, WidgetRef ref, int listIndex) {
+  void _showBottomSheet(BuildContext context, WidgetRef ref, String listId) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => GameListModal(listIndex: listIndex),
+      builder: (context) => GameListModal(listId: listId),
     );
   }
 
@@ -291,7 +284,6 @@ class LibraryScreen extends ConsumerWidget {
                       enabled: !isLoading,
                       decoration: const InputDecoration(labelText: 'Shared collection data', hintText: 'Paste the shared collection here'),
                       maxLines: 3,
-                      autofocus: true,
                     ),
                     if (isLoading) ...[
                       const SizedBox(height: 12),

@@ -13,7 +13,7 @@ class ApiService {
     final headers = {
       'Client-ID': _apiId,
       'Authorization': 'Bearer $_apiKey',
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain',
     };
 
     try {
@@ -43,7 +43,7 @@ class ApiService {
     final headers = {
       'Client-ID': _apiId,
       'Authorization': 'Bearer $_apiKey',
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain',
     };
 
     try {
@@ -72,7 +72,7 @@ class ApiService {
     final headers = {
       'Client-ID': _apiId,
       'Authorization': 'Bearer $_apiKey',
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain',
     };
 
     try {
@@ -101,7 +101,7 @@ class ApiService {
     final headers = {
       'Client-ID': _apiId,
       'Authorization': 'Bearer $_apiKey',
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain',
     };
    
     try {
@@ -137,7 +137,7 @@ class ApiService {
     final headers = {
       'Client-ID': _apiId,
       'Authorization': 'Bearer $_apiKey',
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain',
     };
 
     try {

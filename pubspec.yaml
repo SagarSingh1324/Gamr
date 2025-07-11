@@ -41,6 +41,8 @@ dependencies:
   shared_preferences: ^2.5.3
   share_plus: ^11.0.0
   path_provider: ^2.1.5
+  connectivity_plus: ^5.0.2
+  internet_connection_checker: ^1.0.0+1
 
 dev_dependencies:
   flutter_test:
@@ -105,14 +107,14 @@ flutter:
 flutter_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icons/gamr_icon.png"
+  image_path: "assets/icons/icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
-    image_path: "assets/icons/gamr_icon.png"
+    image_path: "assets/icons/icon.png"
     background_color: "#hexcode"
     theme_color: "#hexcode"
   windows:
     generate: true
-    image_path: "assets/icons/gamr_icon.png"
+    image_path: "assets/icons/icon.png"
     icon_size: 48 # min:48, max:256, default: 48

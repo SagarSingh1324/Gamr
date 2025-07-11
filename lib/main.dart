@@ -34,7 +34,7 @@ class MainTabScreen extends StatefulWidget {
 }
 
 class MainTabScreenState extends State<MainTabScreen> {
-  int _selectedIndex = 1; // Start on Home tab
+  int _selectedIndex = 0; // Start on Explore tab
   
   // Navigation callback function
   void navigateToLibrary() {

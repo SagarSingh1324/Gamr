@@ -1,34 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/game_instance.dart';
 import '../providers/home_provider.dart';
 import '../widgets/game_instance_card_big.dart';
+import '../providers/internet_status_provider.dart';
+import '../utilities/internet_checker.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-
   final VoidCallback? onNavigateToLibrary;
-  const HomeScreen({
-    super.key,
-    this.onNavigateToLibrary,
-  });
-  
+
+  const HomeScreen({super.key, this.onNavigateToLibrary});
+
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
+// Global HomeScreen refreshed once or not flag
+final homeRefreshedOnceProvider = StateProvider<bool>((ref) => false);
+
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _hasCheckedInternet = false;
+  bool _hasInternet = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialInternet();
+  }
+
+  Future<void> _checkInitialInternet() async {
+    final result = await hasInternetConnection();
+    if (mounted) {
+      setState(() {
+        _hasCheckedInternet = true;
+        _hasInternet = result;
+      });
+
+      final hasRefreshed = ref.read(homeRefreshedOnceProvider);
+      if (result && !hasRefreshed) {
+        ref.read(homeProvider.notifier).refreshItems();
+        ref.read(homeRefreshedOnceProvider.notifier).state = true;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<ConnectivityResult>>(internetStatusProvider, (prev, next) async {
+      if (next is AsyncData) {
+        final connected = await hasInternetConnection();
+
+        if (mounted) {
+          setState(() => _hasInternet = connected);
+
+          final hasRefreshed = ref.read(homeRefreshedOnceProvider);
+          if (connected && !hasRefreshed) {
+            ref.read(homeProvider.notifier).refreshItems();
+            ref.read(homeRefreshedOnceProvider.notifier).state = true;
+          }
+        }
+      }
+    });
+
     final homeAsync = ref.watch(homeProvider);
     final homeNotifier = ref.read(homeProvider.notifier);
-    
+
+    if (!_hasCheckedInternet) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_hasInternet) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Popular Now')),
+        body: const Center(
+          child: Text(
+            'No internet connection',
+            style: TextStyle(fontSize: 18),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Popular Now'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => homeNotifier.refreshItems(),
+            onPressed: () {
+              ref.read(homeProvider.notifier).refreshItems();
+              ref.read(homeRefreshedOnceProvider.notifier).state = true;
+            },
           ),
         ],
       ),
@@ -41,9 +106,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
               Text(
-                'Error: $error', 
-                textAlign: TextAlign.center, 
-                style: const TextStyle(color: Colors.red)
+                'Error: $error',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -54,16 +119,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         data: (categoryMap) {
-          // Get available popTypes (1-8) instead of category names
           final popTypes = homeNotifier.popTypes;
           final hasData = categoryMap.values.any((games) => games.isNotEmpty);
-          
+
           if (!hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           final isStillLoading = categoryMap.length < popTypes.length;
-          
+
           return ListView(
             padding: const EdgeInsets.all(8),
             children: [
@@ -71,7 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final popTypeKey = popType.toString();
                 final games = categoryMap[popTypeKey] ?? [];
                 final categoryName = homeNotifier.getPopularityName(popType);
-                
+
                 if (games.isNotEmpty) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -91,12 +155,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildHorizontalList(
-    BuildContext context, 
-    WidgetRef ref, 
-    String category, 
-    List<GameInstance> games
+    BuildContext context,
+    WidgetRef ref,
+    String category,
+    List<GameInstance> games,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,8 +173,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Text(
                 category,
                 style: const TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -119,30 +183,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         const SizedBox(height: 8),
         SizedBox(
           height: 300,
-          child: games.isEmpty 
-            ? const Center(
-                child: Text(
-                  'No games available',
-                  style: TextStyle(color: Colors.grey),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: games.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: index == 0 ? 8 : 0,
+                  right: 8,
                 ),
-              )
-            : ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: games.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      left: index == 0 ? 8 : 0,
-                      right: 8,
-                    ),
-                    child: GameInstanceCardBig(
-                      item: games[index],
-                      ref: ref,
-                      onNavigateToLibrary: widget.onNavigateToLibrary,
-                    ),
-                  );
-                },
-              ),
+                child: GameInstanceCardBig(
+                  item: games[index],
+                  ref: ref,
+                  onNavigateToLibrary: widget.onNavigateToLibrary,
+                ),
+              );
+            },
+          ),
         ),
       ],
     );

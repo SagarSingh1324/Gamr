@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../models/game_instance.dart';
 import '../providers/explore_provider.dart';
 import '../widgets/game_instance_card_big.dart';
+import '../providers/internet_status_provider.dart';
+import '../utilities/internet_checker.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
-
   final VoidCallback? onNavigateToLibrary;
-  const ExploreScreen({
-    super.key, 
-    this.onNavigateToLibrary,
-  });
+  const ExploreScreen({super.key, this.onNavigateToLibrary});
 
   @override
   ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
@@ -32,8 +31,35 @@ final searchResultsProvider = FutureProvider<List<GameInstance>>((ref) async {
   return await ref.read(exploreProvider.notifier).fetchByName(query);
 });
 
+// Global ExploreScreen refreshed once or not flag
+final exploreRefreshedOnceProvider = StateProvider<bool>((ref) => false);
+
 class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   final FocusNode _searchFocusNode = FocusNode();
+  bool _hasCheckedInternet = false;
+  bool _hasInternet = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialInternet();
+  }
+
+  Future<void> _checkInitialInternet() async {
+    final result = await hasInternetConnection();
+    if (mounted) {
+      setState(() {
+        _hasCheckedInternet = true;
+        _hasInternet = result;
+      });
+
+      final hasRefreshed = ref.read(exploreRefreshedOnceProvider);
+      if (result && !hasRefreshed) {
+        ref.read(exploreProvider.notifier).refreshItems();
+        ref.read(exploreRefreshedOnceProvider.notifier).state = true;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -43,6 +69,23 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // React to connection state changes
+    ref.listen<AsyncValue<ConnectivityResult>>(internetStatusProvider, (prev, next) async {
+      if (next is AsyncData) {
+        final connected = await hasInternetConnection();
+
+        if (mounted) {
+          setState(() => _hasInternet = connected);
+
+          final hasRefreshed = ref.read(exploreRefreshedOnceProvider);
+          if (connected && !hasRefreshed) {
+            ref.read(exploreProvider.notifier).refreshItems();
+            ref.read(exploreRefreshedOnceProvider.notifier).state = true;
+          }
+        }
+      }
+    });
+
     final exploreAsync = ref.watch(exploreProvider);
     final exploreNotifier = ref.read(exploreProvider.notifier);
     final searchQuery = ref.watch(searchQueryProvider);
@@ -51,13 +94,34 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
     final isSearching = searchQuery != null && searchQuery.isNotEmpty;
 
+    if (!_hasCheckedInternet) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_hasInternet) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('By Genre')),
+        body: const Center(
+          child: Text(
+            'No internet connection',
+            style: TextStyle(fontSize: 18),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('By Genre'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => exploreNotifier.refreshItems(),
+            onPressed: () {
+              ref.read(exploreProvider.notifier).refreshItems();
+              ref.read(exploreRefreshedOnceProvider.notifier).state = true;
+            },
           ),
         ],
       ),
@@ -82,7 +146,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     : null,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onChanged: (_) {}, // No need for setState
+              onChanged: (_) {},
               onSubmitted: (value) {
                 ref.read(searchQueryProvider.notifier).state = value.trim();
                 FocusScope.of(context).unfocus();
@@ -107,9 +171,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: GameInstanceCardBig(
-                              item: results[index], 
-                              ref: ref, 
-                              onNavigateToLibrary: widget.onNavigateToLibrary, 
+                              item: results[index],
+                              ref: ref,
+                              onNavigateToLibrary: widget.onNavigateToLibrary,
                             ),
                           );
                         },
@@ -169,11 +233,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   }
 
   Widget _buildHorizontalList(
-    BuildContext context, 
-    WidgetRef ref, 
-    String genre, 
-    List<GameInstance> games
-    ) {
+    BuildContext context,
+    WidgetRef ref,
+    String genre,
+    List<GameInstance> games,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -183,7 +247,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 300, 
+          height: 300,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: games.length,
@@ -191,9 +255,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GameInstanceCardBig(
-                  item: games[index], 
-                  ref: ref, 
-                  onNavigateToLibrary: widget.onNavigateToLibrary, 
+                  item: games[index],
+                  ref: ref,
+                  onNavigateToLibrary: widget.onNavigateToLibrary,
                 ),
               );
             },

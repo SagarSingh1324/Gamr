@@ -6,13 +6,9 @@ class ApiService {
   static String get _url => '${dotenv.env['BASE_URL'] ?? ''}/games';
   static String get _ttbUrl => '${dotenv.env['BASE_URL'] ?? ''}/game_time_to_beats';
   static String get _popUrl => '${dotenv.env['BASE_URL'] ?? ''}/popularity_primitives';
-  static String get _apiId => dotenv.env['API_ID'] ?? '';
-  static String get _apiKey => dotenv.env['API_KEY'] ?? '';
 
   Future<List<Map<String, dynamic>>> fetchGameInstances(String genre, String sortBy) async {
     final headers = {
-      'Client-ID': _apiId,
-      'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'text/plain',
     };
 
@@ -41,8 +37,6 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> fetchGameByName(String name) async {
     final headers = {
-      'Client-ID': _apiId,
-      'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'text/plain',
     };
 
@@ -70,8 +64,6 @@ class ApiService {
 
   Future<List<dynamic>> fetchGameById(int id) async {
     final headers = {
-      'Client-ID': _apiId,
-      'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'text/plain',
     };
 
@@ -99,8 +91,6 @@ class ApiService {
 
   Future<Map<String, dynamic>?> fetchGameTimeToBeat(int gameId) async {
     final headers = {
-      'Client-ID': _apiId,
-      'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'text/plain',
     };
    
@@ -135,8 +125,6 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> fetchGameByPop(int popType) async {
     final headers = {
-      'Client-ID': _apiId,
-      'Authorization': 'Bearer $_apiKey',
       'Content-Type': 'text/plain',
     };
 
